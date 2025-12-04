@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-sdk/client"
@@ -75,7 +76,13 @@ func getHostnames(containers []container.Summary, labelKey string) ([]string, er
 
 	for _, container := range containers {
 		if labelValue, ok := container.Labels[labelKey]; ok {
-			hostnames = append(hostnames, labelValue)
+			// Split the label value by | to support multiple hostnames
+			splitHostnames := strings.Split(labelValue, "|")
+			for _, hostname := range splitHostnames {
+				if trimmedHostname := strings.TrimSpace(hostname); trimmedHostname != "" {
+					hostnames = append(hostnames, trimmedHostname)
+				}
+			}
 		}
 	}
 
