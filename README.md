@@ -1,6 +1,7 @@
 # Headscale DNS Docker
 
 Automatically generates DNS records for Headscale `extra_records.json` based on Docker container labels.
+It is meant to supplement Docker label based reverse proxy setups (e.g., Traefik, Nginx Proxy Manager, etc.) when using Headscale as Tailscale control server.
 
 Refer: <https://github.com/juanfont/headscale/blob/main/docs/ref/dns.md>
 
@@ -56,6 +57,7 @@ services:
   myapp:
     image: myapp
     labels:
+      - "traefik.http.routers.myapp.rule=Host(`myapp.your-node-hostname.ts.net`) || Host(`myapp.your-node-hostname`)"
       - "headscale.dns.subdomain=myapp"
 ```
 
@@ -79,4 +81,4 @@ The image is available at: `ghcr.io/pranaovs/headscale-dns-docker:latest`
 
 ---
 
-_Disclaimer: README.md, Dockerfile and .github/ created using Claude Sonet 4.5 (GitHub Copilot). Please report any problems/inconsistencies if found._
+_Disclaimer: README.md, Dockerfile and .github/ created using Claude Sonnet 4.5 (GitHub Copilot). Please report any problems/inconsistencies if found._
