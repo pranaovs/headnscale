@@ -158,6 +158,11 @@ func main() {
 func createJSON(subdomains []string, domain string, nodeConfig NodeIP) []map[string]any {
 	var records []map[string]any
 
+	// Initialize as empty slice instead of nil
+	if records == nil {
+		records = make([]map[string]any, 0)
+	}
+
 	for _, subdomain := range subdomains {
 		// Create A record for IPv4
 		if nodeConfig.IPv4 != nil {
@@ -195,6 +200,12 @@ func createJSON(subdomains []string, domain string, nodeConfig NodeIP) []map[str
 		typeJ := records[j]["type"].(string)
 		return typeI < typeJ
 	})
+
+	// Ensure we always return an empty array instead of null
+	if len(records) == 0 {
+		return []map[string]any{}
+	}
+
 	return records
 }
 
