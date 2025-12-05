@@ -58,8 +58,6 @@ func getRunningDockerContainers(cli client.SDKClient, ctx context.Context) ([]co
 		return nil, err
 	}
 
-	fmt.Printf("Checking %d containers:\n\n", len(containers))
-
 	containersRunning := []container.Summary{}
 
 	for _, container := range containers {
