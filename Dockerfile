@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY main.go ./
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o headscale-dns-docker .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o headnscale .
 
 FROM alpine:latest
 
@@ -14,6 +14,6 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /app
 
-COPY --from=builder /app/headscale-dns-docker .
+COPY --from=builder /app/headnscale .
 
-ENTRYPOINT ["./headscale-dns-docker"]
+ENTRYPOINT ["./headnscale"]
