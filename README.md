@@ -1,4 +1,4 @@
-# Headscale DNS Docker
+# Headnscale Docker autodiscovery
 
 Automatically generates DNS records for Headscale `extra_records.json` based on Docker container labels.
 It is meant to supplement Docker label based reverse proxy setups (e.g., Traefik, Nginx Proxy Manager, etc.) when using Headscale as Tailscale control server.
@@ -17,14 +17,14 @@ Refer: <https://github.com/juanfont/headscale/blob/main/docs/ref/dns.md>
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `HEADSCALE_DNS_JSON_PATH` | Yes | - | Path to write the extra_records.json file |
-| `HEADSCALE_DNS_NODE_HOSTNAME` | Yes | - | Hostname of the node running the containers |
-| `HEADSCALE_DNS_NODE_IP` | Yes | - | IPv4 address of the node |
-| `HEADSCALE_DNS_NODE_IP6` | No | - | IPv6 address of the node |
-| `HEADSCALE_DNS_BASE_DOMAIN` | No | `ts.net` | Base domain for DNS records |
-| `HEADSCALE_DNS_LABEL_KEY` | No | `headscale.dns.subdomain` | Docker label key to look for (in seconds) |
-| `HEADSCALE_DNS_REFRESH_SECONDS` | No | `60` | How often to scan containers |
-| `HEADSCALE_DNS_NO_BASE_DOMAIN` | No | `false` | Create additional records without base domain |
+| `HEADNSCALE_JSON_PATH` | Yes | - | Path to write the extra_records.json file |
+| `HEADNSCALE_NODE_HOSTNAME` | Yes | - | Hostname of the node running the containers |
+| `HEADNSCALE_NODE_IP` | Yes | - | IPv4 address of the node |
+| `HEADNSCALE_NODE_IP6` | No | - | IPv6 address of the node |
+| `HEADNSCALE_BASE_DOMAIN` | No | `ts.net` | Base domain for DNS records |
+| `HEADNSCALE_LABEL_KEY` | No | `headnscale.subdomain` | Docker label key to look for (in seconds) |
+| `HEADNSCALE_REFRESH_SECONDS` | No | `60` | How often to scan containers |
+| `HEADNSCALE_NO_BASE_DOMAIN` | No | `false` | Create additional records without base domain |
 | `DOCKER_HOST` | No | `unix:///var/run/docker.sock` | Docker host socket path |
 | `DOCKER_CONTEXT` | No | - | Docker Context |
 
@@ -32,22 +32,22 @@ Refer: <https://github.com/juanfont/headscale/blob/main/docs/ref/dns.md>
 
 ```yaml
 services:
-  headscale-dns-docker:
-    image: ghcr.io/pranaovs/headscale-dns-docker:latest
-    container_name: headscale-dns-docker
+  headnscale:
+    image: ghcr.io/pranaovs/headnscale:latest
+    container_name: headnscale
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/headscale:/data # Headscale extra_records.json directory
     environment:
-      - HEADSCALE_DNS_JSON_PATH=/data/extra_records.json
-      - HEADSCALE_DNS_NODE_HOSTNAME=<Tailscale Hostname> # tailscale whois $(tailscale ip --1)
-      - HEADSCALE_DNS_NODE_IP=<Tailscale IPv4>
-      - HEADSCALE_DNS_NODE_IP6=<Tailscale IPv6>
-      - HEADSCALE_DNS_BASE_DOMAIN=ts.net
-      # - HEADSCALE_DNS_LABEL_KEY=headscale.dns.subdomain
-      # - HEADSCALE_DNS_REFRESH_SECONDS=60
-      - HEADSCALE_DNS_NO_BASE_DOMAIN=true # Create additional DNS Records without HEADSCALE_DNS_BASE_DOMAIN
+      - HEADNSCALE_JSON_PATH=/data/extra_records.json
+      - HEADNSCALE_NODE_HOSTNAME=<Tailscale Hostname> # tailscale whois $(tailscale ip --1)
+      - HEADNSCALE_NODE_IP=<Tailscale IPv4>
+      - HEADNSCALE_NODE_IP6=<Tailscale IPv6>
+      - HEADNSCALE_BASE_DOMAIN=ts.net
+      # - HEADNSCALE_LABEL_KEY=headnscale.subdomain
+      # - HEADNSCALE_REFRESH_SECONDS=60
+      - HEADNSCALE_NO_BASE_DOMAIN=true # Create additional DNS Records without HEADNSCALE_BASE_DOMAIN
 ```
 
 ### Usage
@@ -60,16 +60,16 @@ services:
     image: myapp
     labels:
       - "traefik.http.routers.myapp.rule=Host(`myapp.your-node-hostname.ts.net`) || Host(`myapp.your-node-hostname`)"
-      - "headscale.dns.subdomain=myapp"
+      - "headnscale.subdomain=myapp"
 ```
 
-2. A DNS record(s) will be created for `myapp.your-node-hostname.ts.net` -> `HEADSCALE_DNS_NODE_IP` (and `HEADSCALE_DNS_NODE_IP6` if set).
-3. If `HEADSCALE_DNS_NO_BASE_DOMAIN` is set to `true`, an additional record for `myapp.your-node-hostname` -> `HEADSCALE_DNS_NODE_IP` (and `HEADSCALE_DNS_NODE_IP6` if set) will be created.
+2. A DNS record(s) will be created for `myapp.your-node-hostname.ts.net` -> `HEADNSCALE_NODE_IP` (and `HEADNSCALE_NODE_IP6` if set).
+3. If `HEADNSCALE_NO_BASE_DOMAIN` is set to `true`, an additional record for `myapp.your-node-hostname` -> `HEADNSCALE_NODE_IP` (and `HEADNSCALE_NODE_IP6` if set) will be created.
 
 ## Building from Source
 
 ```bash
-docker build -t headscale-dns-docker .
+docker build -t headnscale .
 ```
 
 ## GitHub Actions
@@ -79,7 +79,7 @@ This repository automatically builds and pushes Docker images to GitHub Containe
 - Every push to `main` branch (tagged as `latest`)
 - Every tagged release (tagged as version numbers)
 
-The image is available at: `ghcr.io/pranaovs/headscale-dns-docker:latest`
+The image is available at: `ghcr.io/pranaovs/headnscale:latest`
 
 ---
 

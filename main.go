@@ -21,49 +21,49 @@ type NodeIP struct {
 }
 
 func main() {
-	labelKey, ok := os.LookupEnv("HEADSCALE_DNS_LABEL_KEY")
+	labelKey, ok := os.LookupEnv("HEADNSCALE_LABEL_KEY")
 	if !ok {
-		labelKey = "headscale.dns.subdomain"
+		labelKey = "headnscale.subdomain"
 	}
 
-	extraRecordsPath, ok := os.LookupEnv("HEADSCALE_DNS_JSON_PATH")
+	extraRecordsPath, ok := os.LookupEnv("HEADNSCALE_JSON_PATH")
 	if !ok {
-		log.Fatal("HEADSCALE_DNS_JSON_PATH environment variable is required")
+		log.Fatal("HEADNSCALE_JSON_PATH environment variable is required")
 	}
 
-	refreshSecondsStr, ok := os.LookupEnv("HEADSCALE_DNS_REFRESH_SECONDS")
+	refreshSecondsStr, ok := os.LookupEnv("HEADNSCALE_REFRESH_SECONDS")
 	if !ok {
 		refreshSecondsStr = "60"
 	}
 	refreshSeconds, err := strconv.Atoi(refreshSecondsStr)
 	if err != nil {
-		log.Fatalf("Invalid HEADSCALE_DNS_REFRESH_SECONDS value: %v", err)
+		log.Fatalf("Invalid HEADNSCALE_REFRESH_SECONDS value: %v", err)
 	}
 
-	baseDomain, ok := os.LookupEnv("HEADSCALE_DNS_BASE_DOMAIN")
+	baseDomain, ok := os.LookupEnv("HEADNSCALE_BASE_DOMAIN")
 	if !ok {
 		baseDomain = "ts.net"
 	}
 
-	nodeHostname, ok := os.LookupEnv("HEADSCALE_DNS_NODE_HOSTNAME")
+	nodeHostname, ok := os.LookupEnv("HEADNSCALE_NODE_HOSTNAME")
 	if !ok {
-		log.Fatal("HEADSCALE_DNS_NODE_HOSTNAME environment variable is required")
+		log.Fatal("HEADNSCALE_NODE_HOSTNAME environment variable is required")
 	}
 
 	noBaseDomain := false
-	noBaseDomainStr, ok := os.LookupEnv("HEADSCALE_DNS_NO_BASE_DOMAIN")
+	noBaseDomainStr, ok := os.LookupEnv("HEADNSCALE_NO_BASE_DOMAIN")
 	if ok && (noBaseDomainStr == "1" || strings.ToLower(noBaseDomainStr) == "true") {
 		noBaseDomain = true
 	}
 
-	nodeIP4Str, ok := os.LookupEnv("HEADSCALE_DNS_NODE_IP")
+	nodeIP4Str, ok := os.LookupEnv("HEADNSCALE_NODE_IP")
 	if !ok {
-		log.Fatal("HEADSCALE_DNS_NODE_IP environment variable is required. Use tailscale ip to get the node IP.")
+		log.Fatal("HEADNSCALE_NODE_IP environment variable is required. Use tailscale ip to get the node IP.")
 	}
 
-	nodeIP6Str, ok := os.LookupEnv("HEADSCALE_DNS_NODE_IP6")
+	nodeIP6Str, ok := os.LookupEnv("HEADNSCALE_NODE_IP6")
 	if !ok {
-		log.Printf("HEADSCALE_DNS_NODE_IP6 environment variable is required. AAAA records will not be created.")
+		log.Printf("HEADNSCALE_NODE_IP6 environment variable is required. AAAA records will not be created.")
 	}
 
 	// Parse IP addresses
@@ -71,13 +71,13 @@ func main() {
 
 	nodeConfig.IPv4 = net.ParseIP(nodeIP4Str)
 	if nodeConfig.IPv4 == nil {
-		log.Fatal("Invalid IPv4 address provided in HEADSCALE_DNS_NODE_IP")
+		log.Fatal("Invalid IPv4 address provided in HEADNSCALE_NODE_IP")
 	}
 
 	if nodeIP6Str != "" {
 		nodeConfig.IPv6 = net.ParseIP(nodeIP6Str)
 		if nodeConfig.IPv6 == nil {
-			log.Fatal("Invalid IPv6 address provided in HEADSCALE_DNS_NODE_IP6")
+			log.Fatal("Invalid IPv6 address provided in HEADNSCALE_NODE_IP6")
 		}
 	}
 
@@ -157,7 +157,7 @@ func main() {
 	// Run once on startup
 	processContainers()
 
-	// Repeat every HEADSCALE_DNS_REFRESH_SECONDS seconds
+	// Repeat every HEADNSCALE_REFRESH_SECONDS seconds
 	ticker := time.NewTicker(time.Duration(refreshSeconds) * time.Second)
 	defer ticker.Stop()
 	for range ticker.C {

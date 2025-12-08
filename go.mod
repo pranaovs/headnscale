@@ -1,4 +1,4 @@
-module github.com/pranaovs/headscale-dns-docker
+module github.com/pranaovs/headnscale
 
 go 1.25.4
 
