@@ -7,26 +7,26 @@ import (
 )
 
 // Ref: https://github.com/juanfont/headscale/blob/main/docs/ref/dns.md
-func CreateJSON(subdomains []string, config types.Config) any {
+func CreateJSON(subdomains []string, baseDomain string, node types.Node) []map[string]any {
 	records := make([]map[string]any, 0)
 
 	for _, subdomain := range subdomains {
 		// Create A record for IPv4
-		if config.Node.IP.IPv4 != nil {
+		if node.IP.IPv4 != nil {
 			record := map[string]any{
-				"name":  subdomain + "." + config.Node.BaseDomain,
+				"name":  subdomain + "." + baseDomain,
 				"type":  "A",
-				"value": config.Node.IP.IPv4.String(),
+				"value": node.IP.IPv4.String(),
 			}
 			records = append(records, record)
 		}
 
 		// Create AAAA record for IPv6 if available
-		if config.Node.IP.IPv6 != nil {
+		if node.IP.IPv6 != nil {
 			record := map[string]any{
-				"name":  subdomain + "." + config.Node.BaseDomain,
+				"name":  subdomain + "." + baseDomain,
 				"type":  "AAAA",
-				"value": config.Node.IP.IPv6.String(),
+				"value": node.IP.IPv6.String(),
 			}
 			records = append(records, record)
 		}

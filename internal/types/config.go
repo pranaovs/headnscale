@@ -9,11 +9,11 @@ type Config struct {
 	ExtraRecordsFile string
 	NoBaseDomain     bool
 	Refresh          time.Duration
+	BaseDomain       string
 	Node             Node
 }
 
 type Node struct {
-	BaseDomain string
-	Hostname   string
-	IP         NodeIP
+	Hostname string
+	IP       NodeIP
 }

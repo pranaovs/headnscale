@@ -80,7 +80,10 @@ func process(ctx context.Context, cli sdkclient.SDKClient, cfg types.Config) {
 	log.Printf("Found %d labeled containers, %d subdomains", len(labeled), len(trimmedSubdomains))
 
 	// Create DNS JSON records
-	records := dns.CreateJSON(trimmedSubdomains, cfg).([]map[string]any)
+	records := dns.CreateJSON(trimmedSubdomains, cfg.Node.Hostname+"."+cfg.BaseDomain, cfg.Node)
+	if cfg.NoBaseDomain {
+		records = append(records, dns.CreateJSON(trimmedSubdomains, cfg.Node.Hostname, cfg.Node)...)
+	}
 	sorted := dns.SortJSON(records)
 
 	// Write file
@@ -106,9 +109,9 @@ func loadConfig() types.Config {
 		ExtraRecordsFile: config.GetEnv("HEADNSCALE_JSON_PATH", "/var/lib/headscale/extra-records.json"),
 		NoBaseDomain:     config.GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
 		Refresh:          getDuration("HEADNSCALE_REFRESH_SECONDS", 60),
+		BaseDomain:       config.GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
 		Node: types.Node{
-			BaseDomain: config.GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
-			Hostname:   config.GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
+			Hostname: config.GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
 		},
 	}
 
@@ -158,7 +161,7 @@ func logStartup(cfg types.Config) {
 	log.Printf("Using configuration:")
 	log.Printf(" - Label Key: %s", cfg.LabelKey)
 	log.Printf(" - Extra Records File: %s", cfg.ExtraRecordsFile)
-	log.Printf(" - Base Domain: %s", cfg.Node.BaseDomain)
+	log.Printf(" - Base Domain: %s", cfg.BaseDomain)
 	log.Printf(" - Hostname: %s", cfg.Node.Hostname)
 	log.Printf(" - No Base Domain: %t", cfg.NoBaseDomain)
 	log.Printf(" - Refresh Interval: %s", cfg.Refresh)
