@@ -6,268 +6,164 @@ import (
 	"log"
 	"net"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-sdk/client"
+	sdkclient "github.com/docker/go-sdk/client"
+
+	"github.com/pranaovs/headnscale/internal/config"
+	"github.com/pranaovs/headnscale/internal/dns"
+	docker "github.com/pranaovs/headnscale/internal/integrations/docker"
+	"github.com/pranaovs/headnscale/internal/types"
 )
 
-type NodeIP struct {
-	IPv4 net.IP
-	IPv6 net.IP
-}
-
 func main() {
-	labelKey, ok := os.LookupEnv("HEADNSCALE_LABEL_KEY")
-	if !ok {
-		labelKey = "headnscale.subdomain"
-	}
+	// Load configuration
+	cfg := loadConfig()
 
-	extraRecordsPath, ok := os.LookupEnv("HEADNSCALE_JSON_PATH")
-	if !ok {
-		log.Fatal("HEADNSCALE_JSON_PATH environment variable is required")
-	}
-
-	refreshSecondsStr, ok := os.LookupEnv("HEADNSCALE_REFRESH_SECONDS")
-	if !ok {
-		refreshSecondsStr = "60"
-	}
-	refreshSeconds, err := strconv.Atoi(refreshSecondsStr)
-	if err != nil {
-		log.Fatalf("Invalid HEADNSCALE_REFRESH_SECONDS value: %v", err)
-	}
-
-	baseDomain, ok := os.LookupEnv("HEADNSCALE_BASE_DOMAIN")
-	if !ok {
-		baseDomain = "ts.net"
-	}
-
-	nodeHostname, ok := os.LookupEnv("HEADNSCALE_NODE_HOSTNAME")
-	if !ok {
-		log.Fatal("HEADNSCALE_NODE_HOSTNAME environment variable is required")
-	}
-
-	noBaseDomain := false
-	noBaseDomainStr, ok := os.LookupEnv("HEADNSCALE_NO_BASE_DOMAIN")
-	if ok && (noBaseDomainStr == "1" || strings.ToLower(noBaseDomainStr) == "true") {
-		noBaseDomain = true
-	}
-
-	nodeIP4Str, ok := os.LookupEnv("HEADNSCALE_NODE_IP")
-	if !ok {
-		log.Fatal("HEADNSCALE_NODE_IP environment variable is required. Use tailscale ip to get the node IP.")
-	}
-
-	nodeIP6Str, ok := os.LookupEnv("HEADNSCALE_NODE_IP6")
-	if !ok {
-		log.Printf("HEADNSCALE_NODE_IP6 environment variable is required. AAAA records will not be created.")
-	}
-
-	// Parse IP addresses
-	nodeConfig := NodeIP{}
-
-	nodeConfig.IPv4 = net.ParseIP(nodeIP4Str)
-	if nodeConfig.IPv4 == nil {
-		log.Fatal("Invalid IPv4 address provided in HEADNSCALE_NODE_IP")
-	}
-
-	if nodeIP6Str != "" {
-		nodeConfig.IPv6 = net.ParseIP(nodeIP6Str)
-		if nodeConfig.IPv6 == nil {
-			log.Fatal("Invalid IPv6 address provided in HEADNSCALE_NODE_IP6")
-		}
-	}
-
+	// Build Docker client
 	ctx := context.Background()
-	// Create client with options
-	cli, err := client.New(
-		ctx,
-		getDockerOptions()...,
-	)
+	cli, err := sdkclient.New(ctx, docker.GetClientOption()...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to initialize Docker client: %v", err)
 	}
-
-	// Cleanup
 	defer func() {
-		err := cli.Close()
-		if err != nil {
-			log.Fatalf("Error closing Docker client: %v", err)
-		}
+		err = cli.Close()
+		log.Printf("error closing Docker client: %v", err)
 	}()
 
-	log.Printf("Using settings: ")
-	log.Printf(" - Label Key: %s", labelKey)
-	log.Printf(" - JSON extra_records_path path: %s", extraRecordsPath)
-	log.Printf(" - Base Domain: %s", baseDomain)
-	log.Printf(" - Node Hostname: %s", nodeHostname)
-	log.Printf(" - Create records with no base domain: %t", noBaseDomain)
-	log.Printf(" - Node IPv4 Address: %s", nodeConfig.IPv4.String())
-	if nodeConfig.IPv6 != nil {
-		log.Printf(" - Node IPv6 Address: %s", nodeConfig.IPv6.String())
-	}
-	ipInfo := nodeConfig.IPv4.String()
-	if nodeConfig.IPv6 != nil {
-		ipInfo += "/" + nodeConfig.IPv6.String()
-	}
-	log.Printf(" - Example URL: service.%s.%s -> %s", nodeHostname, baseDomain, ipInfo)
-	log.Printf(" - Refresh Interval: %d seconds", refreshSeconds)
+	logStartup(cfg)
 
-	processContainers := func() {
-		containersRunning, err := getRunningDockerContainers(cli, ctx)
-		if err != nil {
-			log.Fatalf("Error getting running containers: %v", err)
-			return
-		}
-		log.Printf("Found %d running containers", len(containersRunning))
+	// Perform one scan immediately
+	process(ctx, cli, cfg)
 
-		subdomains, err := getSubdomainsFromLabels(containersRunning, labelKey)
-		if err != nil {
-			log.Fatalf("Error getting hostnames: %v", err)
-			return
-		}
-		log.Printf("Discovered %d subdomains\n", len(subdomains))
-
-		// Create JSON records
-		records := createJSON(subdomains, nodeHostname+"."+baseDomain, nodeConfig)
-		// Create DNS records with no base domain
-		if noBaseDomain {
-			records = append(records, createJSON(subdomains, nodeHostname, nodeConfig)...)
-		}
-
-		// Marshal to JSON with proper formatting
-		jsonData, err := json.MarshalIndent(sortJSON(records), "", "  ")
-		if err != nil {
-			log.Fatalf("Error marshaling JSON: %v", err)
-			return
-		}
-
-		// Write to file
-		err = os.WriteFile(extraRecordsPath, jsonData, 0o644)
-		if err != nil {
-			log.Fatalf("Error writing JSON file: %v", err)
-			return
-		}
-		log.Printf("Successfully wrote %d DNS records to JSON file", len(records))
-	}
-
-	// Run once on startup
-	processContainers()
-
-	// Repeat every HEADNSCALE_REFRESH_SECONDS seconds
-	ticker := time.NewTicker(time.Duration(refreshSeconds) * time.Second)
+	// Schedule recurring scans
+	ticker := time.NewTicker(cfg.Refresh)
 	defer ticker.Stop()
+
 	for range ticker.C {
-		processContainers()
+		process(ctx, cli, cfg)
 	}
 }
 
-// https://github.com/juanfont/headscale/blob/main/docs/ref/dns.md
-func createJSON(subdomains []string, domain string, nodeConfig NodeIP) []map[string]any {
-	records := make([]map[string]any, 0)
+func process(ctx context.Context, cli sdkclient.SDKClient, cfg types.Config) {
+	containers, err := docker.GetRunning(cli, ctx)
+	if err != nil {
+		log.Printf("error listing containers: %v", err)
+		return
+	}
+
+	labeled, err := docker.GetLabelled(containers, cfg.LabelKey)
+	if err != nil {
+		log.Printf("error filtering labeled containers: %v", err)
+		return
+	}
+
+	subdomains, err := docker.GetLabels(labeled, cfg.LabelKey)
+	if err != nil {
+		log.Printf("error retrieving labels: %v", err)
+		return
+	}
+
+	trimmedSubdomains := []string{}
 
 	for _, subdomain := range subdomains {
-		// Create A record for IPv4
-		if nodeConfig.IPv4 != nil {
-			record := map[string]any{
-				"name":  subdomain + "." + domain,
-				"type":  "A",
-				"value": nodeConfig.IPv4.String(),
+		// Split the label value by | to support multiple hostnames
+		for hostname := range strings.SplitSeq(subdomain, "|") {
+			if trimmedHostname := strings.TrimSpace(hostname); trimmedHostname != "" {
+				trimmedSubdomains = append(trimmedSubdomains, trimmedHostname)
 			}
-			records = append(records, record)
-		}
-
-		// Create AAAA record for IPv6 if available
-		if nodeConfig.IPv6 != nil {
-			record := map[string]any{
-				"name":  subdomain + "." + domain,
-				"type":  "AAAA",
-				"value": nodeConfig.IPv6.String(),
-			}
-			records = append(records, record)
 		}
 	}
 
-	return records
-}
+	log.Printf("Found %d labeled containers, %d subdomains", len(labeled), len(trimmedSubdomains))
 
-func sortJSON(records []map[string]any) []map[string]any {
-	// Sort the keys
-	// "Be sure to "sort keys" and produce a stable output in case you generate the JSON file with a script.
-	// Headscale uses a checksum to detect changes to the file and a stable output avoids unnecessary processing."
-	sort.Slice(records, func(i, j int) bool {
-		nameI := records[i]["name"].(string)
-		nameJ := records[j]["name"].(string)
+	// Create DNS JSON records
+	records := dns.CreateJSON(trimmedSubdomains, cfg).([]map[string]any)
+	sorted := dns.SortJSON(records)
 
-		if nameI != nameJ {
-			return nameI < nameJ
-		}
-
-		typeI := records[i]["type"].(string)
-		typeJ := records[j]["type"].(string)
-		return typeI < typeJ
-	})
-
-	return records
-}
-
-func getDockerOptions() []client.ClientOption {
-	options := []client.ClientOption{}
-
-	dockerHost := os.Getenv("DOCKER_HOST")
-	if dockerHost != "" {
-		log.Printf("Using DOCKER_HOST: %s", dockerHost)
-		options = append(options, client.WithDockerHost(dockerHost))
+	// Write file
+	if err := writeJSON(cfg.ExtraRecordsFile, sorted); err != nil {
+		log.Printf("error writing JSON: %v", err)
+		return
 	}
 
-	dockerContext := os.Getenv("DOCKER_CONTEXT")
-	if dockerContext != "" {
-		log.Printf("Using DOCKER_CONTEXT: %s", dockerContext)
-		options = append(options, client.WithDockerContext(dockerContext))
-	}
-
-	if dockerContext == "" && dockerHost == "" {
-		options = append(options, client.WithDockerHost("unix:///var/run/docker.sock"))
-	}
-
-	return options
+	log.Printf("Successfully wrote %d DNS records", len(sorted))
 }
 
-func getRunningDockerContainers(cli client.SDKClient, ctx context.Context) ([]container.Summary, error) {
-	containers, err := cli.ContainerList(ctx, container.ListOptions{All: true})
+func writeJSON(path string, v any) error {
+	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		log.Fatalf("Error listing containers: %v", err)
-		return nil, err
+		return err
 	}
-
-	containersRunning := []container.Summary{}
-
-	for _, container := range containers {
-		if container.State == "running" {
-			containersRunning = append(containersRunning, container)
-		}
-	}
-
-	return containersRunning, nil
+	return os.WriteFile(path, data, 0o644)
 }
 
-func getSubdomainsFromLabels(containers []container.Summary, labelKey string) ([]string, error) {
-	hostnames := []string{}
+func loadConfig() types.Config {
+	cfg := types.Config{
+		LabelKey:         config.GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
+		ExtraRecordsFile: config.GetEnv("HEADNSCALE_JSON_PATH", "/var/lib/headscale/extra-records.json"),
+		NoBaseDomain:     config.GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
+		Refresh:          getDuration("HEADNSCALE_REFRESH_SECONDS", 60),
+		Node: types.Node{
+			BaseDomain: config.GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
+			Hostname:   config.GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
+		},
+	}
 
-	for _, container := range containers {
-		if labelValue, ok := container.Labels[labelKey]; ok {
-			// Split the label value by | to support multiple hostnames
-			splitHostnames := strings.SplitSeq(labelValue, "|")
-			for hostname := range splitHostnames {
-				if trimmedHostname := strings.TrimSpace(hostname); trimmedHostname != "" {
-					hostnames = append(hostnames, trimmedHostname)
-				}
-			}
+	ip4 := config.GetEnv("HEADNSCALE_NODE_IP", "")
+	if ip4 == "" {
+		log.Fatal("HEADNSCALE_NODE_IP is required")
+	}
+
+	ip6 := config.GetEnv("HEADNSCALE_NODE_IP6", "")
+
+	cfg.Node.IP.IPv4 = net.ParseIP(ip4)
+	if cfg.Node.IP.IPv4 == nil {
+		log.Fatalf("Invalid IPv4 address: %s", ip4)
+	}
+
+	if ip6 != "" {
+		cfg.Node.IP.IPv6 = net.ParseIP(ip6)
+		if cfg.Node.IP.IPv6 == nil {
+			log.Fatalf("Invalid IPv6 address: %s", ip6)
 		}
 	}
 
-	return hostnames, nil
+	if cfg.ExtraRecordsFile == "" {
+		log.Fatal("HEADNSCALE_JSON_PATH is required")
+	}
+	if cfg.Node.Hostname == "" {
+		log.Fatal("HEADNSCALE_NODE_HOSTNAME is required")
+	}
+
+	return cfg
+}
+
+func getDuration(env string, defSeconds int) time.Duration {
+	val := config.GetEnv(env, "")
+	if val == "" {
+		return time.Duration(defSeconds) * time.Second
+	}
+
+	seconds, err := strconv.Atoi(val)
+	if err != nil {
+		log.Fatalf("invalid value for %s: %v", env, err)
+	}
+	return time.Duration(seconds) * time.Second
+}
+
+func logStartup(cfg types.Config) {
+	log.Printf("Using configuration:")
+	log.Printf(" - Label Key: %s", cfg.LabelKey)
+	log.Printf(" - Extra Records File: %s", cfg.ExtraRecordsFile)
+	log.Printf(" - Base Domain: %s", cfg.Node.BaseDomain)
+	log.Printf(" - Hostname: %s", cfg.Node.Hostname)
+	log.Printf(" - No Base Domain: %t", cfg.NoBaseDomain)
+	log.Printf(" - Refresh Interval: %s", cfg.Refresh)
+	log.Printf(" - Node IPv4: %s", cfg.Node.IP.IPv4.String())
+	if cfg.Node.IP.IPv6 != nil {
+		log.Printf(" - Node IPv6: %s", cfg.Node.IP.IPv6.String())
+	}
 }
