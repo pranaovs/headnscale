@@ -76,7 +76,8 @@ docker build -t headnscale .
 
 This repository automatically builds and pushes Docker images to GitHub Container Registry on:
 
-- Every push to `main` branch (tagged as `latest`)
+- Latest tag (tagged as `latest`)
+- Every push to `main` branch (tagged as `main`)
 - Every tagged release (tagged as version numbers)
 
 The image is available at: `ghcr.io/pranaovs/headnscale:latest`
