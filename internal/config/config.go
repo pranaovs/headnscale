@@ -12,7 +12,7 @@ import (
 func Load() types.Config {
 	cfg := types.Config{
 		LabelKey:         GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
-		ExtraRecordsFile: GetEnv("HEADNSCALE_JSON_PATH", "/var/lib/headscale/extra-records.json"),
+		ExtraRecordsFile: GetEnv("HEADNSCALE_JSON_PATH", ""),
 		HostsFile:        GetEnv("HEADNSCALE_HOSTS_PATH", ""),
 		NoBaseDomain:     GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
 		BaseDomain:       GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),

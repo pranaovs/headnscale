@@ -89,18 +89,21 @@ func process(ctx context.Context, cli sdkclient.SDKClient, cfg types.Config) {
 	log.Printf("Found %d labeled containers, %d subdomains", len(labeled), len(trimmedSubdomains))
 
 	// Create DNS JSON records
-	records := dns.CreateJSON(trimmedSubdomains, cfg.Node.Hostname+"."+cfg.BaseDomain, cfg.Node)
-	if cfg.NoBaseDomain {
-		records = append(records, dns.CreateJSON(trimmedSubdomains, cfg.Node.Hostname, cfg.Node)...)
-	}
-	sorted := dns.SortJSON(records)
+	if cfg.ExtraRecordsFile != "" {
+		records := dns.CreateJSON(trimmedSubdomains, cfg.Node.Hostname+"."+cfg.BaseDomain, cfg.Node)
+		if cfg.NoBaseDomain {
+			records = append(records, dns.CreateJSON(trimmedSubdomains, cfg.Node.Hostname, cfg.Node)...)
+		}
+		sorted := dns.SortJSON(records)
 
-	// Write file
-	if err := writeJSON(cfg.ExtraRecordsFile, sorted); err != nil {
-		log.Printf("error writing JSON: %v", err)
-		return
+		// Write file
+		if err := writeJSON(cfg.ExtraRecordsFile, sorted); err != nil {
+			log.Printf("error writing JSON: %v", err)
+			return
+		}
 	}
 
+	// Create hosts file
 	if cfg.HostsFile != "" {
 		records := dns.CreateHosts(trimmedSubdomains, cfg.Node.Hostname+"."+cfg.BaseDomain, cfg.Node)
 		if cfg.NoBaseDomain {
@@ -114,7 +117,7 @@ func process(ctx context.Context, cli sdkclient.SDKClient, cfg types.Config) {
 		}
 	}
 
-	log.Printf("Successfully wrote %d DNS records", len(sorted))
+	log.Printf("Successfully processed %d DNS records", len(trimmedSubdomains))
 }
 
 func writeJSON(path string, v any) error {

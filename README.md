@@ -17,8 +17,8 @@ Refer: <https://github.com/juanfont/headscale/blob/main/docs/ref/dns.md>
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `HEADNSCALE_JSON_PATH` | No | `/var/lib/headscale/extra-records.json` | Path to write the extra_records.json file |
-| `HEADNSCALE_HOSTS_PATH` | No | - | Path to write the hosts file (optional) |
+| `HEADNSCALE_JSON_PATH` | No | - | Path to write the extra_records.json file |
+| `HEADNSCALE_HOSTS_PATH` | No | - | Path to write the hosts file |
 | `HEADNSCALE_NODE_HOSTNAME` | Yes | - | Hostname of the node running the containers |
 | `HEADNSCALE_NODE_IP` | Yes | - | IPv4 address of the node |
 | `HEADNSCALE_NODE_IP6` | No | - | IPv6 address of the node |
