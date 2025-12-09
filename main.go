@@ -107,10 +107,9 @@ func process(ctx context.Context, cli sdkclient.SDKClient, cfg types.Config) {
 			records = append(records, dns.CreateHosts(trimmedSubdomains, cfg.Node.Hostname, cfg.Node)...)
 		}
 		sorted := dns.SortHosts(records)
-		data := strings.Join(sorted, "")
 
 		// Write the hosts file
-		if err := os.WriteFile(cfg.HostsFile, []byte(data), 0o644); err != nil {
+		if err := writeHosts(cfg.HostsFile, sorted); err != nil {
 			log.Printf("error writing hosts file: %v", err)
 		}
 	}
@@ -124,6 +123,11 @@ func writeJSON(path string, v any) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o644)
+}
+
+func writeHosts(path string, hosts []string) error {
+	data := strings.Join(hosts, "")
+	return os.WriteFile(path, []byte(data), 0o644)
 }
 
 func logStartup(cfg types.Config) {
