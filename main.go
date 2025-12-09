@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"net"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -20,7 +18,7 @@ import (
 
 func main() {
 	// Load configuration
-	cfg := loadConfig()
+	cfg := config.Load()
 
 	// Build Docker client
 	ctx := context.Background()
@@ -101,60 +99,6 @@ func writeJSON(path string, v any) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o644)
-}
-
-func loadConfig() types.Config {
-	cfg := types.Config{
-		LabelKey:         config.GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
-		ExtraRecordsFile: config.GetEnv("HEADNSCALE_JSON_PATH", "/var/lib/headscale/extra-records.json"),
-		NoBaseDomain:     config.GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
-		Refresh:          getDuration("HEADNSCALE_REFRESH_SECONDS", 60),
-		BaseDomain:       config.GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
-		Node: types.Node{
-			Hostname: config.GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
-		},
-	}
-
-	ip4 := config.GetEnv("HEADNSCALE_NODE_IP", "")
-	if ip4 == "" {
-		log.Fatal("HEADNSCALE_NODE_IP is required")
-	}
-
-	ip6 := config.GetEnv("HEADNSCALE_NODE_IP6", "")
-
-	cfg.Node.IP.IPv4 = net.ParseIP(ip4)
-	if cfg.Node.IP.IPv4 == nil {
-		log.Fatalf("Invalid IPv4 address: %s", ip4)
-	}
-
-	if ip6 != "" {
-		cfg.Node.IP.IPv6 = net.ParseIP(ip6)
-		if cfg.Node.IP.IPv6 == nil {
-			log.Fatalf("Invalid IPv6 address: %s", ip6)
-		}
-	}
-
-	if cfg.ExtraRecordsFile == "" {
-		log.Fatal("HEADNSCALE_JSON_PATH is required")
-	}
-	if cfg.Node.Hostname == "" {
-		log.Fatal("HEADNSCALE_NODE_HOSTNAME is required")
-	}
-
-	return cfg
-}
-
-func getDuration(env string, defSeconds int) time.Duration {
-	val := config.GetEnv(env, "")
-	if val == "" {
-		return time.Duration(defSeconds) * time.Second
-	}
-
-	seconds, err := strconv.Atoi(val)
-	if err != nil {
-		log.Fatalf("invalid value for %s: %v", env, err)
-	}
-	return time.Duration(seconds) * time.Second
 }
 
 func logStartup(cfg types.Config) {
