@@ -18,6 +18,7 @@ Refer: <https://github.com/juanfont/headscale/blob/main/docs/ref/dns.md>
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `HEADNSCALE_JSON_PATH` | No | `/var/lib/headscale/extra-records.json` | Path to write the extra_records.json file |
+| `HEADNSCALE_HOSTS_PATH` | No | - | Path to write the hosts file (optional) |
 | `HEADNSCALE_NODE_HOSTNAME` | Yes | - | Hostname of the node running the containers |
 | `HEADNSCALE_NODE_IP` | Yes | - | IPv4 address of the node |
 | `HEADNSCALE_NODE_IP6` | No | - | IPv6 address of the node |
@@ -25,6 +26,7 @@ Refer: <https://github.com/juanfont/headscale/blob/main/docs/ref/dns.md>
 | `HEADNSCALE_LABEL_KEY` | No | `headnscale.subdomain` | Docker label key to look for (in seconds) |
 | `HEADNSCALE_REFRESH_SECONDS` | No | `60` | How often to scan containers |
 | `HEADNSCALE_NO_BASE_DOMAIN` | No | `false` | Create additional records without base domain |
+| `HEADNSCALE_PORT` | No | `8080` | Port for internal HTTP server (health checks, hosts.txt) |
 | `DOCKER_HOST` | No | `unix:///var/run/docker.sock` | Docker host socket path |
 | `DOCKER_CONTEXT` | No | - | Docker Context |
 
@@ -39,8 +41,11 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/headscale:/data # Headscale extra_records.json directory
+    ports:
+      - 8080:8080 # Optional: for health checks and hosts.txt (:8080/hosts.txt)
     environment:
       - HEADNSCALE_JSON_PATH=/data/extra_records.json
+      - HEADNSCALE_HOSTS_PATH=/data/hosts.txt
       - HEADNSCALE_NODE_HOSTNAME=<Tailscale Hostname> # tailscale whois $(tailscale ip --1)
       - HEADNSCALE_NODE_IP=<Tailscale IPv4>
       - HEADNSCALE_NODE_IP6=<Tailscale IPv6>

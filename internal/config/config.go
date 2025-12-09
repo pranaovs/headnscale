@@ -3,27 +3,35 @@ package config
 import (
 	"log"
 	"net"
+	"strconv"
 
 	"github.com/pranaovs/headnscale/internal/types"
 	"github.com/pranaovs/headnscale/internal/utils"
 )
 
 func Load() types.Config {
-	refreshDuration, err := utils.GetDuration(GetEnv("HEADNSCALE_REFRESH_SECONDS", "60"))
-	if err != nil {
-		log.Fatal("Invalid HEADNSCALE_REFRESH_SECONDS value")
-	}
-
 	cfg := types.Config{
 		LabelKey:         GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
 		ExtraRecordsFile: GetEnv("HEADNSCALE_JSON_PATH", "/var/lib/headscale/extra-records.json"),
+		HostsFile:        GetEnv("HEADNSCALE_HOSTS_PATH", ""),
 		NoBaseDomain:     GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
-		Refresh:          refreshDuration,
 		BaseDomain:       GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
 		Node: types.Node{
 			Hostname: GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
 		},
 	}
+
+	refreshDuration, err := utils.GetDuration(GetEnv("HEADNSCALE_REFRESH_SECONDS", "60"))
+	if err != nil {
+		log.Fatal("Invalid HEADNSCALE_REFRESH_SECONDS value")
+	}
+	cfg.Refresh = refreshDuration
+
+	port, err := strconv.Atoi(GetEnv("HEADNSCALE_PORT", "8080"))
+	if err != nil || port <= 0 || port > 65535 {
+		log.Fatal("Invalid HEADNSCALE_PORT value")
+	}
+	cfg.Port = port
 
 	ip4 := GetEnv("HEADNSCALE_NODE_IP", "")
 	if ip4 == "" {
