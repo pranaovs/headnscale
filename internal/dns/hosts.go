@@ -3,6 +3,7 @@ package dns
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/pranaovs/headnscale/internal/types"
 )
@@ -25,6 +26,19 @@ func CreateHosts(subdomains []string, baseDomain string, node types.Node) []stri
 }
 
 func SortHosts(hosts []string) []string {
-	slices.Sort(hosts)
+	slices.SortFunc(hosts, func(a, b string) int {
+		// Split into fields: ["IP", "hostname"]
+		partsA := strings.Fields(a)
+		partsB := strings.Fields(b)
+
+		// Safety check: fallback to normal string compare
+		if len(partsA) < 2 || len(partsB) < 2 {
+			return strings.Compare(a, b)
+		}
+
+		// Compare the SECOND field
+		return strings.Compare(partsA[1], partsB[1])
+	})
+
 	return hosts
 }
