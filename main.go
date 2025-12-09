@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/pranaovs/headnscale/internal/config"
 	"github.com/pranaovs/headnscale/internal/dns"
+	"github.com/pranaovs/headnscale/internal/httpserver"
 	docker "github.com/pranaovs/headnscale/internal/integrations/docker"
 	"github.com/pranaovs/headnscale/internal/types"
 )
@@ -32,6 +34,15 @@ func main() {
 	}()
 
 	logStartup(cfg)
+
+	if cfg.HostsFile != "" {
+		httpserver.ServeFile("/hosts", cfg.HostsFile)
+		httpserver.ServeFile("/hosts.txt", cfg.HostsFile)
+		log.Printf("Serving hosts file at /hosts and /hosts.txt")
+	}
+
+	go httpserver.Start(net.ParseIP("0.0.0.0"), 8080)
+	log.Printf("HTTP server started on port %d", cfg.Port)
 
 	// Perform one scan immediately
 	process(ctx, cli, cfg)
@@ -88,6 +99,20 @@ func process(ctx context.Context, cli sdkclient.SDKClient, cfg types.Config) {
 	if err := writeJSON(cfg.ExtraRecordsFile, sorted); err != nil {
 		log.Printf("error writing JSON: %v", err)
 		return
+	}
+
+	if cfg.HostsFile != "" {
+		records := dns.CreateHosts(trimmedSubdomains, cfg.Node.Hostname+"."+cfg.BaseDomain, cfg.Node)
+		if cfg.NoBaseDomain {
+			records = append(records, dns.CreateHosts(trimmedSubdomains, cfg.Node.Hostname, cfg.Node)...)
+		}
+		sorted := dns.SortHosts(records)
+		data := strings.Join(sorted, "")
+
+		// Write the hosts file
+		if err := os.WriteFile(cfg.HostsFile, []byte(data), 0o644); err != nil {
+			log.Printf("error writing hosts file: %v", err)
+		}
 	}
 
 	log.Printf("Successfully wrote %d DNS records", len(sorted))
