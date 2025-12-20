@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-sdk/client"
+	sdkclient "github.com/docker/go-sdk/client"
 )
 
-func GetRunning(cli client.SDKClient, ctx context.Context) ([]container.Summary, error) {
+func GetRunning(ctx context.Context, cli sdkclient.SDKClient) ([]container.Summary, error) {
 	containers, err := cli.ContainerList(ctx, container.ListOptions{All: true})
 	if err != nil {
 		log.Fatalf("Error listing containers: %v", err)

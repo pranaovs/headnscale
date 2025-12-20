@@ -2,147 +2,158 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
-	"net"
 	"os"
-	"strings"
-	"time"
-
-	sdkclient "github.com/docker/go-sdk/client"
+	"os/signal"
+	"syscall"
 
 	"github.com/pranaovs/headnscale/internal/config"
-	"github.com/pranaovs/headnscale/internal/dns"
-	"github.com/pranaovs/headnscale/internal/httpserver"
-	docker "github.com/pranaovs/headnscale/internal/integrations/docker"
+	"github.com/pranaovs/headnscale/internal/sink/headscale"
+	"github.com/pranaovs/headnscale/internal/sink/hosts"
+	"github.com/pranaovs/headnscale/internal/source/docker"
 	"github.com/pranaovs/headnscale/internal/types"
 )
 
 func main() {
-	// Load configuration
 	cfg := config.Load()
-
-	// Build Docker client
-	ctx := context.Background()
-	cli, err := sdkclient.New(ctx, docker.GetClientOption()...)
-	if err != nil {
-		log.Fatalf("failed to initialize Docker client: %v", err)
-	}
-	defer func() {
-		err = cli.Close()
-		log.Printf("error closing Docker client: %v", err)
-	}()
-
 	logStartup(cfg)
 
-	if cfg.HostsFile != "" {
-		httpserver.ServeFile("/hosts", cfg.HostsFile)
-		httpserver.ServeFile("/hosts.txt", cfg.HostsFile)
-		log.Printf("Serving hosts file at /hosts and /hosts.txt")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Initialize sources
+	sources := []types.Source{
+		docker.New(cfg),
 	}
 
-	go httpserver.Start(net.ParseIP("0.0.0.0"), 8080)
-	log.Printf("HTTP server started on port %d", cfg.Port)
-
-	// Perform one scan immediately
-	process(ctx, cli, cfg)
-
-	// Schedule recurring scans
-	ticker := time.NewTicker(cfg.Refresh)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		process(ctx, cli, cfg)
+	// Initialize sinks
+	sinks := []types.Sink{
+		hosts.New(cfg),
+		headscale.New(cfg),
 	}
+
+	// Setup and start all modules
+	if err := initializeModules(ctx, sources, sinks); err != nil {
+		log.Fatalf("Failed to initialize modules: %v", err)
+	}
+	defer closeModules(sources, sinks)
+
+	// Start watching for changes
+	go watchSources(ctx, sources, sinks)
+
+	// Wait for interrupt signal
+	waitForShutdown()
+	cancel()
 }
 
-func process(ctx context.Context, cli sdkclient.SDKClient, cfg types.Config) {
-	containers, err := docker.GetRunning(cli, ctx)
-	if err != nil {
-		log.Printf("error listing containers: %v", err)
-		return
+func initializeModules(ctx context.Context, sources []types.Source, sinks []types.Sink) error {
+	for _, source := range sources {
+		if err := source.Initialize(ctx); err != nil {
+			return err
+		}
 	}
 
-	labeled, err := docker.GetLabelled(containers, cfg.LabelKey)
-	if err != nil {
-		log.Printf("error filtering labeled containers: %v", err)
-		return
+	for _, sink := range sinks {
+		if err := sink.Initialize(ctx); err != nil {
+			return err
+		}
 	}
 
-	subdomains, err := docker.GetLabels(labeled, cfg.LabelKey)
-	if err != nil {
-		log.Printf("error retrieving labels: %v", err)
-		return
-	}
+	return nil
+}
 
-	trimmedSubdomains := []string{}
+func watchSources(ctx context.Context, sources []types.Source, sinks []types.Sink) {
+	for _, source := range sources {
+		go func(src types.Source) {
+			nodesChan, errChan := src.Watch(ctx)
 
-	for _, subdomain := range subdomains {
-		// Split the label value by | to support multiple hostnames
-		for hostname := range strings.SplitSeq(subdomain, "|") {
-			if trimmedHostname := strings.TrimSpace(hostname); trimmedHostname != "" {
-				trimmedSubdomains = append(trimmedSubdomains, trimmedHostname)
+			for {
+				select {
+				case nodes, ok := <-nodesChan:
+					if !ok {
+						log.Println("Source watch channel closed")
+						return
+					}
+
+					log.Printf("Received update: %d nodes", len(nodes))
+
+					for _, sink := range sinks {
+						if err := sink.Process(ctx, nodes); err != nil {
+							log.Printf("Error writing to sink: %v", err)
+						}
+					}
+				case err, ok := <-errChan:
+					if !ok {
+						return
+					}
+					if err != nil {
+						log.Printf("Error from source watch: %v", err)
+						return
+					}
+				case <-ctx.Done():
+					return
+				}
 			}
-		}
+		}(source)
 	}
-
-	log.Printf("Found %d labeled containers, %d subdomains", len(labeled), len(trimmedSubdomains))
-
-	// Create DNS JSON records
-	if cfg.ExtraRecordsFile != "" {
-		records := dns.CreateJSON(trimmedSubdomains, cfg.Node.Hostname+"."+cfg.BaseDomain, cfg.Node)
-		if cfg.NoBaseDomain {
-			records = append(records, dns.CreateJSON(trimmedSubdomains, cfg.Node.Hostname, cfg.Node)...)
-		}
-		sorted := dns.SortJSON(records)
-
-		// Write file
-		if err := writeJSON(cfg.ExtraRecordsFile, sorted); err != nil {
-			log.Printf("error writing JSON: %v", err)
-			return
-		}
-	}
-
-	// Create hosts file
-	if cfg.HostsFile != "" {
-		records := dns.CreateHosts(trimmedSubdomains, cfg.Node.Hostname+"."+cfg.BaseDomain, cfg.Node)
-		if cfg.NoBaseDomain {
-			records = append(records, dns.CreateHosts(trimmedSubdomains, cfg.Node.Hostname, cfg.Node)...)
-		}
-		sorted := dns.SortHosts(records)
-
-		// Write the hosts file
-		if err := writeHosts(cfg.HostsFile, sorted); err != nil {
-			log.Printf("error writing hosts file: %v", err)
-		}
-	}
-
-	log.Printf("Successfully processed %d DNS records", len(trimmedSubdomains))
 }
 
-func writeJSON(path string, v any) error {
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return err
+func processOnce(ctx context.Context, sources []types.Source, sinks []types.Sink) error {
+	var allNodes []types.Node
+
+	for _, source := range sources {
+		nodes, err := source.Fetch(ctx)
+		if err != nil {
+			log.Printf("Error fetching from source: %v", err)
+			continue
+		}
+		allNodes = append(allNodes, nodes...)
 	}
-	return os.WriteFile(path, data, 0o644)
+
+	log.Printf("Fetched %d nodes from %d source(s)", len(allNodes), len(sources))
+
+	for _, sink := range sinks {
+		if err := sink.Process(ctx, allNodes); err != nil {
+			log.Printf("Error writing to sink: %v", err)
+		}
+	}
+
+	return nil
 }
 
-func writeHosts(path string, hosts []string) error {
-	data := strings.Join(hosts, "")
-	return os.WriteFile(path, []byte(data), 0o644)
+func closeModules(sources []types.Source, sinks []types.Sink) {
+	for _, source := range sources {
+		if err := source.Close(); err != nil {
+			log.Printf("Error closing source: %v", err)
+		}
+	}
+
+	for _, sink := range sinks {
+		if err := sink.Close(); err != nil {
+			log.Printf("Error closing sink: %v", err)
+		}
+	}
 }
 
-func logStartup(cfg types.Config) {
+func waitForShutdown() {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	<-sigChan
+	log.Println("Shutdown signal received, cleaning up...")
+}
+
+func logStartup(config types.Config) {
 	log.Printf("Using configuration:")
-	log.Printf(" - Label Key: %s", cfg.LabelKey)
-	log.Printf(" - Extra Records File: %s", cfg.ExtraRecordsFile)
-	log.Printf(" - Base Domain: %s", cfg.BaseDomain)
-	log.Printf(" - Hostname: %s", cfg.Node.Hostname)
-	log.Printf(" - No Base Domain: %t", cfg.NoBaseDomain)
-	log.Printf(" - Refresh Interval: %s", cfg.Refresh)
-	log.Printf(" - Node IPv4: %s", cfg.Node.IP.IPv4.String())
-	if cfg.Node.IP.IPv6 != nil {
-		log.Printf(" - Node IPv6: %s", cfg.Node.IP.IPv6.String())
+	log.Printf(" - Label Key: %s", config.LabelKey)
+	log.Printf(" - Extra Records File: %s", config.ExtraRecordsFile)
+	log.Printf(" - Hosts File: %s", config.HostsFile)
+	log.Printf(" - Base Domain: %s", config.BaseDomain)
+	log.Printf(" - Hostname: %s", config.Node.Hostname)
+	log.Printf(" - No Base Domain: %t", config.NoBaseDomain)
+	log.Printf(" - Refresh Interval: %s", config.Refresh)
+	log.Printf(" - HTTP Port: %d", config.Port)
+	log.Printf(" - Node IPv4: %s", config.Node.IP.IPv4.String())
+	if config.Node.IP.IPv6 != nil {
+		log.Printf(" - Node IPv6: %s", config.Node.IP.IPv6.String())
 	}
 }

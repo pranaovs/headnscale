@@ -14,8 +14,3 @@ type Config struct {
 	Port             int
 	Node             Node
 }
-
-type Node struct {
-	Hostname string
-	IP       NodeIP
-}

@@ -1,20 +1,30 @@
-package dns
+package headscale
 
 import (
-	"sort"
+	"encoding/json"
+	"os"
+	libsort "sort"
 
 	"github.com/pranaovs/headnscale/internal/types"
 )
 
 // Ref: https://github.com/juanfont/headscale/blob/main/docs/ref/dns.md
-func CreateJSON(subdomains []string, baseDomain string, node types.Node) []map[string]any {
+func create(nodes []types.Node, baseDomain string) []map[string]any {
+	if baseDomain == "" {
+		baseDomain = ""
+	} else {
+		baseDomain = "." + baseDomain
+	}
+
 	records := make([]map[string]any, 0)
 
-	for _, subdomain := range subdomains {
+	for _, node := range nodes {
+		subdomain := node.Hostname
+
 		// Create A record for IPv4
 		if node.IP.IPv4 != nil {
 			record := map[string]any{
-				"name":  subdomain + "." + baseDomain,
+				"name":  subdomain + baseDomain,
 				"type":  "A",
 				"value": node.IP.IPv4.String(),
 			}
@@ -24,7 +34,7 @@ func CreateJSON(subdomains []string, baseDomain string, node types.Node) []map[s
 		// Create AAAA record for IPv6 if available
 		if node.IP.IPv6 != nil {
 			record := map[string]any{
-				"name":  subdomain + "." + baseDomain,
+				"name":  subdomain + baseDomain,
 				"type":  "AAAA",
 				"value": node.IP.IPv6.String(),
 			}
@@ -35,11 +45,11 @@ func CreateJSON(subdomains []string, baseDomain string, node types.Node) []map[s
 	return records
 }
 
-func SortJSON(records []map[string]any) []map[string]any {
+func sort(records []map[string]any) []map[string]any {
 	// Sort the keys
 	// "Be sure to "sort keys" and produce a stable output in case you generate the JSON file with a script.
 	// Headscale uses a checksum to detect changes to the file and a stable output avoids unnecessary processing."
-	sort.Slice(records, func(i, j int) bool {
+	libsort.Slice(records, func(i, j int) bool {
 		nameI := records[i]["name"].(string)
 		nameJ := records[j]["name"].(string)
 
@@ -53,4 +63,12 @@ func SortJSON(records []map[string]any) []map[string]any {
 	})
 
 	return records
+}
+
+func write(path string, v any) error {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o644)
 }
