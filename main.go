@@ -43,7 +43,6 @@ func main() {
 
 	// Wait for interrupt signal
 	waitForShutdown()
-	cancel()
 }
 
 func initializeModules(ctx context.Context, sources []types.Source, sinks []types.Sink) error {
