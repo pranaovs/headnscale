@@ -4,10 +4,11 @@ import (
 	"context"
 	"log"
 
+	"github.com/pranaovs/headnscale/internal/config"
 	"github.com/pranaovs/headnscale/internal/types"
 )
 
-func New(config types.Config) *Sink {
+func New(config config.Config) *Sink {
 	return &Sink{
 		filePath:     config.ExtraRecordsFile,
 		noBaseDomain: config.NoBaseDomain,
