@@ -23,16 +23,22 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Initialize sources
-	sources := []types.Source{
-		docker.New(cfg),
-		tailscale.New(cfg),
+	// Initialize sources based on config
+	var sources []types.Source
+	if cfg.DockerEnabled {
+		sources = append(sources, docker.New(cfg))
+	}
+	if cfg.TailscaleEnabled {
+		sources = append(sources, tailscale.New(cfg))
 	}
 
-	// Initialize sinks
-	sinks := []types.Sink{
-		hosts.New(cfg),
-		headscale.New(cfg),
+	// Initialize sinks based on config
+	var sinks []types.Sink
+	if cfg.HostsFile != "" {
+		sinks = append(sinks, hosts.New(cfg))
+	}
+	if cfg.ExtraRecordsFile != "" {
+		sinks = append(sinks, headscale.New(cfg))
 	}
 
 	// Setup and start all modules
@@ -169,16 +175,35 @@ func waitForShutdown() {
 
 func logStartup(config config.Config) {
 	log.Printf("Using configuration:")
-	log.Printf(" - Label Key: %s", config.LabelKey)
-	log.Printf(" - Extra Records File: %s", config.ExtraRecordsFile)
-	log.Printf(" - Hosts File: %s", config.HostsFile)
 	log.Printf(" - Base Domain: %s", config.BaseDomain)
-	log.Printf(" - Hostname: %s", config.Node.Hostname)
 	log.Printf(" - No Base Domain: %t", config.NoBaseDomain)
 	log.Printf(" - Refresh Interval: %s", config.Refresh)
 	log.Printf(" - HTTP Port: %d", config.Port)
-	log.Printf(" - Node IPv4: %s", config.Node.IP.IPv4.String())
-	if config.Node.IP.IPv6 != nil {
-		log.Printf(" - Node IPv6: %s", config.Node.IP.IPv6.String())
+
+	// Sources
+	log.Printf(" - Docker Source: %t", config.DockerEnabled)
+	if config.DockerEnabled {
+		log.Printf("   - Label Key: %s", config.LabelKey)
+		log.Printf("   - Node Hostname: %s", config.Node.Hostname)
+		log.Printf("   - Node IPv4: %s", config.Node.IP.IPv4.String())
+		if config.Node.IP.IPv6 != nil {
+			log.Printf("   - Node IPv6: %s", config.Node.IP.IPv6.String())
+		}
+	}
+
+	log.Printf(" - Tailscale Source: %t", config.TailscaleEnabled)
+	if config.TailscaleEnabled {
+		log.Printf("   - Tailscale Hostname: %s", config.TailscaleHostname)
+		if config.TailscaleLoginServer != "" {
+			log.Printf("   - Tailscale Login Server: %s", config.TailscaleLoginServer)
+		}
+	}
+
+	// Sinks
+	if config.HostsFile != "" {
+		log.Printf(" - Hosts File: %s", config.HostsFile)
+	}
+	if config.ExtraRecordsFile != "" {
+		log.Printf(" - Extra Records File: %s", config.ExtraRecordsFile)
 	}
 }
