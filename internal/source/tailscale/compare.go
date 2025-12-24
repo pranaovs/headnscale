@@ -1,12 +1,23 @@
 package tailscale
 
-import "github.com/pranaovs/headnscale/internal/types"
+import (
+	"bytes"
 
+	"github.com/pranaovs/headnscale/internal/types"
+)
+
+// NodesEqual checks if two node slices are equal
 func NodesEqual(a, b []types.Node) bool {
 	if len(a) != len(b) {
 		return false
 	}
 
+	// Handle empty slices
+	if len(a) == 0 {
+		return true
+	}
+
+	// Create map for O(n) lookup instead of O(n²)
 	index := make(map[string]types.Node, len(a))
 	for _, n := range a {
 		index[n.Hostname] = n
@@ -18,11 +29,6 @@ func NodesEqual(a, b []types.Node) bool {
 			return false
 		}
 
-		// Hostname is identity, but still checked for completeness
-		if other.Hostname != n.Hostname {
-			return false
-		}
-
 		if !equalNodeIP(other.IP, n.IP) {
 			return false
 		}
@@ -31,24 +37,33 @@ func NodesEqual(a, b []types.Node) bool {
 	return true
 }
 
+// equalNodeIP efficiently compares two NodeIP structs
 func equalNodeIP(a, b types.NodeIP) bool {
-	switch {
-	case a.IPv4 == nil && b.IPv4 != nil:
-		return false
-	case a.IPv4 != nil && b.IPv4 == nil:
-		return false
-	case a.IPv4 != nil && !a.IPv4.Equal(b.IPv4):
+	// Compare IPv4
+	if !equalIP(a.IPv4, b.IPv4) {
 		return false
 	}
 
-	switch {
-	case a.IPv6 == nil && b.IPv6 != nil:
-		return false
-	case a.IPv6 != nil && b.IPv6 == nil:
-		return false
-	case a.IPv6 != nil && !a.IPv6.Equal(b.IPv6):
+	// Compare IPv6
+	if !equalIP(a.IPv6, b.IPv6) {
 		return false
 	}
 
 	return true
+}
+
+// equalIP compares two net.IP values using bytes.Equal for efficiency
+func equalIP(a, b []byte) bool {
+	// Both nil
+	if a == nil && b == nil {
+		return true
+	}
+
+	// One nil, one not
+	if a == nil || b == nil {
+		return false
+	}
+
+	// Compare bytes directly
+	return bytes.Equal(a, b)
 }
