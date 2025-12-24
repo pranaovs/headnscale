@@ -16,7 +16,7 @@ func Load() Config {
 		LabelKey:      GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
 
 		// Tailscale source config
-		TailscaleEnabled:     GetEnv("HEADNSCALE_TS_AUTHKEY", "") != "",
+		TailscaleEnabled:     GetEnv("HEADNSCALE_TS_ENABLED", "") != "",
 		TailscaleLoginServer: GetEnv("HEADNSCALE_TS_LOGIN_SERVER", ""),
 		TailscaleAuthKey:     GetEnv("HEADNSCALE_TS_AUTHKEY", ""),
 		TailscaleHostname:    GetEnv("HEADNSCALE_TS_HOSTNAME", "headnscale"),

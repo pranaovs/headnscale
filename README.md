@@ -35,7 +35,7 @@ All sources and sinks are optional and enabled via environment variables.
 
 #### Docker Source (optional)
 
-Set `HEADNSCALE_DOCKER_ENABLED` to any value to enable.
+Set `HEADNSCALE_DOCKER_ENABLED` to enable.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
@@ -51,7 +51,7 @@ Set `HEADNSCALE_DOCKER_ENABLED` to any value to enable.
 
 #### Tailscale Source (optional)
 
-Set `HEADNSCALE_TS_AUTHKEY` to enable.
+Set `HEADNSCALE_TS_ENABLED` to enable.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
