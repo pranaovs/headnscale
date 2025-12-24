@@ -33,7 +33,7 @@ All sources and sinks are optional and enabled via environment variables.
 | `HEADNSCALE_REFRESH_SECONDS` | No | `60` | How often to scan for changes |
 | `HEADNSCALE_PORT` | No | `8080` | Port for internal HTTP server (health checks, hosts.txt) |
 
-#### Docker Source (optional)
+#### Docker Source
 
 Set `HEADNSCALE_DOCKER_ENABLED` to enable.
 
@@ -49,7 +49,7 @@ Set `HEADNSCALE_DOCKER_ENABLED` to enable.
 
 *Required when Docker source is enabled.
 
-#### Tailscale Source (optional)
+#### Tailscale Source
 
 Set `HEADNSCALE_TS_ENABLED` to enable.
 
