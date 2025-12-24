@@ -68,8 +68,6 @@ func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
 				ips.IPv4 = ip.AsSlice()
 			} else if ip.Is6() {
 				ips.IPv6 = ip.AsSlice()
-			} else {
-				log.Printf("unknown IP type for peer %s: %v", peer.HostName, ip)
 			}
 		}
 		nodes = append(nodes, types.Node{
@@ -78,7 +76,6 @@ func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
 		})
 	}
 
-	s.nodes = nodes
 	return nodes, nil
 }
 
@@ -90,6 +87,8 @@ func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) 
 		defer close(nodesChan)
 		defer close(errChan)
 
+		var previousNodes []types.Node
+
 		// Send initial state
 		nodes, err := s.Fetch(ctx)
 		if err != nil {
@@ -97,6 +96,8 @@ func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) 
 			errChan <- err
 			return
 		}
+
+		previousNodes = nodes
 
 		select {
 		case nodesChan <- nodes:
@@ -119,7 +120,7 @@ func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) 
 
 				// Check if NetMap has peer updates
 				if msg.NetMap != nil && msg.NetMap.Peers != nil {
-					// Fetch (updated) nodes
+					// Fetch updated nodes
 					nodes, err := s.Fetch(ctx)
 					if err != nil {
 						log.Printf("error fetching nodes after event: %v", err)
@@ -127,13 +128,13 @@ func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) 
 					}
 
 					// If nodes are unchanged, skip
-					if NodesEqual(s.nodes, nodes) {
+					if NodesEqual(previousNodes, nodes) {
 						continue
 					}
 
 					log.Printf("Tailscale peer update detected")
 
-					s.nodes = nodes
+					previousNodes = nodes
 
 					select {
 					case nodesChan <- nodes:
