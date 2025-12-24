@@ -52,7 +52,34 @@ func (s *Source) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) { return nil, nil }
+func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
+	status, err := s.ts.cli.Status(ctx)
+	if err != nil {
+		log.Printf("Failed to get Tailscale status: %v", err)
+		return nil, err
+	}
+
+	nodes := []types.Node{}
+
+	for _, peer := range status.Peer {
+		ips := types.NodeIP{}
+		for _, ip := range peer.TailscaleIPs {
+			if ip.Is4() {
+				ips.IPv4 = ip.AsSlice()
+			} else if ip.Is6() {
+				ips.IPv6 = ip.AsSlice()
+			} else {
+				log.Printf("Unknown IP type for peer %s: %v", peer.HostName, ip)
+			}
+		}
+		nodes = append(nodes, types.Node{
+			Hostname: peer.HostName,
+			IP:       ips,
+		})
+	}
+
+	return nodes, nil
+}
 
 func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) { return nil, nil }
 
