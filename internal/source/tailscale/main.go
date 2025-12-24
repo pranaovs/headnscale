@@ -6,6 +6,7 @@ import (
 
 	"github.com/pranaovs/headnscale/internal/config"
 	"github.com/pranaovs/headnscale/internal/types"
+	"github.com/pranaovs/headnscale/internal/utils"
 	"tailscale.com/tsnet"
 )
 
@@ -128,7 +129,7 @@ func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) 
 					}
 
 					// If nodes are unchanged, skip
-					if NodesEqual(previousNodes, nodes) {
+					if utils.NodesEqual(previousNodes, nodes) {
 						continue
 					}
 

@@ -1,4 +1,4 @@
-package tailscale
+package utils
 
 import (
 	"bytes"
