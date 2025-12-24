@@ -78,6 +78,7 @@ func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
 		})
 	}
 
+	s.nodes = nodes
 	return nodes, nil
 }
 
@@ -118,14 +119,21 @@ func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) 
 
 				// Check if NetMap has peer updates
 				if msg.NetMap != nil && msg.NetMap.Peers != nil {
-					log.Printf("Tailscale peer update detected")
-
-					// Fetch updated nodes
+					// Fetch (updated) nodes
 					nodes, err := s.Fetch(ctx)
 					if err != nil {
 						log.Printf("error fetching nodes after event: %v", err)
 						continue
 					}
+
+					// If nodes are unchanged, skip
+					if NodesEqual(s.nodes, nodes) {
+						continue
+					}
+
+					log.Printf("Tailscale peer update detected")
+
+					s.nodes = nodes
 
 					select {
 					case nodesChan <- nodes:

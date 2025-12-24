@@ -1,6 +1,7 @@
 package tailscale
 
 import (
+	"github.com/pranaovs/headnscale/internal/types"
 	"tailscale.com/client/local"
 	"tailscale.com/tsnet"
 )
@@ -10,6 +11,7 @@ type Source struct {
 	hostname    string
 	loginServer string
 	forceReauth bool
+	nodes       []types.Node
 	ts          ts
 }
 
