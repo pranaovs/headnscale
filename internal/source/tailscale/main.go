@@ -69,7 +69,7 @@ func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
 			} else if ip.Is6() {
 				ips.IPv6 = ip.AsSlice()
 			} else {
-				log.Printf("Unknown IP type for peer %s: %v", peer.HostName, ip)
+				log.Printf("unknown IP type for peer %s: %v", peer.HostName, ip)
 			}
 		}
 		nodes = append(nodes, types.Node{
@@ -81,7 +81,64 @@ func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
 	return nodes, nil
 }
 
-func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) { return nil, nil }
+func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) {
+	nodesChan := make(chan []types.Node)
+	errChan := make(chan error, 1)
+
+	go func() {
+		defer close(nodesChan)
+		defer close(errChan)
+
+		// Send initial state
+		nodes, err := s.Fetch(ctx)
+		if err != nil {
+			log.Printf("error fetching initial nodes: %v", err)
+			errChan <- err
+			return
+		}
+
+		select {
+		case nodesChan <- nodes:
+		case <-ctx.Done():
+			return
+		}
+
+		// Watch for IPN bus events
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				msg, err := s.ts.watcher.Next()
+				if err != nil {
+					log.Printf("error watching IPN bus: %v", err)
+					errChan <- err
+					return
+				}
+
+				// Check if NetMap has peer updates
+				if msg.NetMap != nil && msg.NetMap.Peers != nil {
+					log.Printf("Tailscale peer update detected")
+
+					// Fetch updated nodes
+					nodes, err := s.Fetch(ctx)
+					if err != nil {
+						log.Printf("error fetching nodes after event: %v", err)
+						continue
+					}
+
+					select {
+					case nodesChan <- nodes:
+					case <-ctx.Done():
+						return
+					}
+				}
+			}
+		}
+	}()
+
+	return nodesChan, errChan
+}
 
 func (s *Source) Close() error {
 	if err := s.ts.srv.Close(); err != nil {
