@@ -11,6 +11,7 @@ import (
 	"github.com/pranaovs/headnscale/internal/sink/headscale"
 	"github.com/pranaovs/headnscale/internal/sink/hosts"
 	"github.com/pranaovs/headnscale/internal/source/docker"
+	"github.com/pranaovs/headnscale/internal/source/tailscale"
 	"github.com/pranaovs/headnscale/internal/types"
 )
 
@@ -24,6 +25,7 @@ func main() {
 	// Initialize sources
 	sources := []types.Source{
 		docker.New(cfg),
+		tailscale.New(cfg),
 	}
 
 	// Initialize sinks
@@ -141,7 +143,7 @@ func waitForShutdown() {
 	log.Println("Shutdown signal received, cleaning up...")
 }
 
-func logStartup(config types.Config) {
+func logStartup(config config.Config) {
 	log.Printf("Using configuration:")
 	log.Printf(" - Label Key: %s", config.LabelKey)
 	log.Printf(" - Extra Records File: %s", config.ExtraRecordsFile)

@@ -8,10 +8,11 @@ import (
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	sdkclient "github.com/docker/go-sdk/client"
+	"github.com/pranaovs/headnscale/internal/config"
 	"github.com/pranaovs/headnscale/internal/types"
 )
 
-func New(config types.Config) *Source {
+func New(config config.Config) *Source {
 	return &Source{
 		labelKey: config.LabelKey,
 		node:     config.Node,

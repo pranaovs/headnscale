@@ -5,10 +5,11 @@ import (
 	"log"
 	"net"
 
+	"github.com/pranaovs/headnscale/internal/config"
 	"github.com/pranaovs/headnscale/internal/types"
 )
 
-func New(config types.Config) *Sink {
+func New(config config.Config) *Sink {
 	return &Sink{
 		filePath:     config.HostsFile,
 		noBaseDomain: config.NoBaseDomain,

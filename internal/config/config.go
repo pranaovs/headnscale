@@ -9,8 +9,8 @@ import (
 	"github.com/pranaovs/headnscale/internal/utils"
 )
 
-func Load() types.Config {
-	cfg := types.Config{
+func Load() Config {
+	cfg := Config{
 		LabelKey:         GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
 		ExtraRecordsFile: GetEnv("HEADNSCALE_JSON_PATH", ""),
 		HostsFile:        GetEnv("HEADNSCALE_HOSTS_PATH", ""),
@@ -19,6 +19,23 @@ func Load() types.Config {
 		Node: types.Node{
 			Hostname: GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
 		},
+		TailscaleLoginServer: GetEnv("HEADNSCALE_TS_LOGIN_SERVER", ""),
+		TailscaleAuthKey:     GetEnv("HEADNSCALE_TS_AUTHKEY", ""),
+		TailscaleHostname:    GetEnv("HEADNSCALE_TS_HOSTNAME", "headnscale"),
+	}
+
+	// Verification
+
+	ip4 := GetEnv("HEADNSCALE_NODE_IP", "")
+	if ip4 == "" {
+		log.Fatal("HEADNSCALE_NODE_IP is required")
+	}
+
+	ip6 := GetEnv("HEADNSCALE_NODE_IP6", "")
+
+	cfg.Node.IP.IPv4 = net.ParseIP(ip4)
+	if cfg.Node.IP.IPv4 == nil {
+		log.Fatalf("Invalid IPv4 address: %s", ip4)
 	}
 
 	refreshDuration, err := utils.GetDuration(GetEnv("HEADNSCALE_REFRESH_SECONDS", "60"))
@@ -32,18 +49,6 @@ func Load() types.Config {
 		log.Fatal("Invalid HEADNSCALE_PORT value")
 	}
 	cfg.Port = port
-
-	ip4 := GetEnv("HEADNSCALE_NODE_IP", "")
-	if ip4 == "" {
-		log.Fatal("HEADNSCALE_NODE_IP is required")
-	}
-
-	ip6 := GetEnv("HEADNSCALE_NODE_IP6", "")
-
-	cfg.Node.IP.IPv4 = net.ParseIP(ip4)
-	if cfg.Node.IP.IPv4 == nil {
-		log.Fatalf("Invalid IPv4 address: %s", ip4)
-	}
 
 	if ip6 != "" {
 		cfg.Node.IP.IPv6 = net.ParseIP(ip6)
