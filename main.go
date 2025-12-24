@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/pranaovs/headnscale/internal/config"
@@ -64,6 +65,30 @@ func initializeModules(ctx context.Context, sources []types.Source, sinks []type
 }
 
 func watchSources(ctx context.Context, sources []types.Source, sinks []types.Sink) {
+	var mu sync.Mutex
+	sourceState := make(map[types.Source][]types.Node)
+
+	// Initialize state for each source
+	for _, src := range sources {
+		sourceState[src] = nil
+	}
+
+	// Helper to merge all source states and write to sinks
+	writeToSinks := func() {
+		var allNodes []types.Node
+		for _, nodes := range sourceState {
+			allNodes = append(allNodes, nodes...)
+		}
+
+		log.Printf("Writing merged update: %d total nodes", len(allNodes))
+
+		for _, sink := range sinks {
+			if err := sink.Process(ctx, allNodes); err != nil {
+				log.Printf("Error writing to sink: %v", err)
+			}
+		}
+	}
+
 	for _, source := range sources {
 		go func(src types.Source) {
 			nodesChan, errChan := src.Watch(ctx)
@@ -76,13 +101,12 @@ func watchSources(ctx context.Context, sources []types.Source, sinks []types.Sin
 						return
 					}
 
-					log.Printf("Received update: %d nodes", len(nodes))
+					log.Printf("Received update from source: %d nodes", len(nodes))
 
-					for _, sink := range sinks {
-						if err := sink.Process(ctx, nodes); err != nil {
-							log.Printf("Error writing to sink: %v", err)
-						}
-					}
+					mu.Lock()
+					sourceState[src] = nodes
+					writeToSinks()
+					mu.Unlock()
 				case err, ok := <-errChan:
 					if !ok {
 						return
