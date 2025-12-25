@@ -24,6 +24,7 @@ func Load() Config {
 		// Sink config
 		ExtraRecordsFile: GetEnv("HEADNSCALE_JSON_PATH", ""),
 		HostsFile:        GetEnv("HEADNSCALE_HOSTS_PATH", ""),
+		DnsPort:          GetEnvInt("HEADNSCALE_DNS_PORT", 0),
 
 		// Common config
 		NoBaseDomain: GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
@@ -53,6 +54,7 @@ func Load() Config {
 		if ip4 == "" {
 			log.Fatal("HEADNSCALE_NODE_IP is required when Docker source is enabled")
 		}
+
 		cfg.Node.IP.IPv4 = net.ParseIP(ip4)
 		if cfg.Node.IP.IPv4 == nil {
 			log.Fatalf("Invalid IPv4 address: %s", ip4)
@@ -71,14 +73,9 @@ func Load() Config {
 		}
 	}
 
-	// Validate at least one source is enabled
-	if !cfg.DockerEnabled && !cfg.TailscaleEnabled {
-		log.Fatal("At least one source must be enabled (set HEADNSCALE_DOCKER_ENABLED or HEADNSCALE_TS_AUTHKEY)")
-	}
-
-	// Validate at least one sink is enabled
-	if cfg.ExtraRecordsFile == "" && cfg.HostsFile == "" {
-		log.Fatal("At least one sink must be enabled (set HEADNSCALE_JSON_PATH or HEADNSCALE_HOSTS_PATH)")
+	if cfg.DnsPort <= 0 || cfg.DnsPort > 65535 {
+		log.Fatal("Invalid HEADNSCALE_DNS_PORT value")
+		cfg.DnsPort = 0
 	}
 
 	return cfg

@@ -20,6 +20,7 @@ type Config struct {
 	// Sinks
 	ExtraRecordsFile string
 	HostsFile        string
+	DnsPort          int
 
 	// Common
 	NoBaseDomain bool
