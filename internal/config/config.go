@@ -71,15 +71,5 @@ func Load() Config {
 		}
 	}
 
-	// Validate at least one source is enabled
-	if !cfg.DockerEnabled && !cfg.TailscaleEnabled {
-		log.Fatal("At least one source must be enabled (set HEADNSCALE_DOCKER_ENABLED or HEADNSCALE_TS_AUTHKEY)")
-	}
-
-	// Validate at least one sink is enabled
-	if cfg.ExtraRecordsFile == "" && cfg.HostsFile == "" {
-		log.Fatal("At least one sink must be enabled (set HEADNSCALE_JSON_PATH or HEADNSCALE_HOSTS_PATH)")
-	}
-
 	return cfg
 }
