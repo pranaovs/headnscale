@@ -74,7 +74,7 @@ func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
 			}
 		}
 		nodes = append(nodes, types.Node{
-			Hostname: peer.HostName,
+			Hostname: hostNameFromDNSName(peer.DNSName),
 			IP:       ips,
 		})
 	}
