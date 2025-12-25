@@ -11,6 +11,14 @@ import (
 
 func Load() Config {
 	cfg := Config{
+		// Common config
+		NoBaseDomain: GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
+		BaseDomain:   GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
+		Node: types.Node{
+			Hostname: GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
+		},
+		StateDir: GetEnv("HEADNSCALE_STATE_DIR", "/var/lib/headnscale"),
+
 		// Docker source config
 		DockerEnabled: GetEnv("HEADNSCALE_DOCKER_ENABLED", "") != "",
 		LabelKey:      GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
@@ -20,18 +28,10 @@ func Load() Config {
 		TailscaleLoginServer: GetEnv("HEADNSCALE_TS_LOGIN_SERVER", ""),
 		TailscaleAuthKey:     GetEnv("HEADNSCALE_TS_AUTHKEY", ""),
 		TailscaleHostname:    GetEnv("HEADNSCALE_TS_HOSTNAME", "headnscale"),
-		TailscaleDir:         GetEnv("HEADNSCALE_TS_DIR", "/var/lib/headnscale"),
 
 		// Sink config
 		ExtraRecordsFile: GetEnv("HEADNSCALE_JSON_PATH", ""),
 		HostsFile:        GetEnv("HEADNSCALE_HOSTS_PATH", ""),
-
-		// Common config
-		NoBaseDomain: GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
-		BaseDomain:   GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
-		Node: types.Node{
-			Hostname: GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
-		},
 	}
 
 	// Parse refresh duration

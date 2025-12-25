@@ -179,6 +179,7 @@ func logStartup(config config.Config) {
 	log.Printf(" - No Base Domain: %t", config.NoBaseDomain)
 	log.Printf(" - Refresh Interval: %s", config.Refresh)
 	log.Printf(" - HTTP Port: %d", config.Port)
+	log.Printf(" - State Directory: %s", config.StateDir)
 
 	// Sources
 	log.Printf(" - Docker Source: %t", config.DockerEnabled)

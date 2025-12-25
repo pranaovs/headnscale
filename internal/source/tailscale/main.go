@@ -15,7 +15,7 @@ func New(config config.Config) *Source {
 		authKey:     config.TailscaleAuthKey,
 		hostname:    config.TailscaleHostname,
 		loginServer: config.TailscaleLoginServer,
-		dir:         config.TailscaleDir,
+		dir:         config.StateDir + "/" + config.TailscaleHostname,
 		forceReauth: false,
 	}
 }

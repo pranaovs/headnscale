@@ -7,6 +7,14 @@ import (
 )
 
 type Config struct {
+	// Common
+	NoBaseDomain bool
+	BaseDomain   string
+	Node         types.Node
+	Refresh      time.Duration
+	Port         int
+	StateDir     string
+
 	// Docker source
 	DockerEnabled bool
 	LabelKey      string
@@ -16,16 +24,8 @@ type Config struct {
 	TailscaleLoginServer string
 	TailscaleAuthKey     string
 	TailscaleHostname    string
-	TailscaleDir         string
 
 	// Sinks
 	ExtraRecordsFile string
 	HostsFile        string
-
-	// Common
-	NoBaseDomain bool
-	BaseDomain   string
-	Node         types.Node
-	Refresh      time.Duration
-	Port         int
 }
