@@ -59,6 +59,7 @@ Set `HEADNSCALE_TS_ENABLED` to enable.
 | `HEADNSCALE_TS_AUTHKEY` | No | - | Tailscale auth key (enables Tailscale source when set) |
 | `HEADNSCALE_TS_LOGIN_SERVER` | No | - | Tailscale/Headscale login server URL |
 | `HEADNSCALE_TS_HOSTNAME` | No | `headnscale` | Hostname for this instance on the Tailscale network |
+| `HEADNSCALE_TS_DIR` | No | `/var/lib/headnscale` | State directory for Tailscale client |
 
 #### Sinks (at least one required)
 

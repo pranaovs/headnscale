@@ -15,6 +15,7 @@ func New(config config.Config) *Source {
 		authKey:     config.TailscaleAuthKey,
 		hostname:    config.TailscaleHostname,
 		loginServer: config.TailscaleLoginServer,
+		dir:         config.TailscaleDir,
 		forceReauth: false,
 	}
 }
@@ -24,6 +25,7 @@ func (s *Source) Initialize(ctx context.Context) error {
 		Hostname:   s.hostname,
 		AuthKey:    s.authKey,
 		ControlURL: s.loginServer,
+		Dir:        s.dir,
 	}
 
 	if _, err := srv.Up(ctx); err != nil {

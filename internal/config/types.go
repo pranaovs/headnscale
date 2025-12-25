@@ -16,6 +16,7 @@ type Config struct {
 	TailscaleLoginServer string
 	TailscaleAuthKey     string
 	TailscaleHostname    string
+	TailscaleDir         string
 
 	// Sinks
 	ExtraRecordsFile string

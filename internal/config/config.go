@@ -20,6 +20,7 @@ func Load() Config {
 		TailscaleLoginServer: GetEnv("HEADNSCALE_TS_LOGIN_SERVER", ""),
 		TailscaleAuthKey:     GetEnv("HEADNSCALE_TS_AUTHKEY", ""),
 		TailscaleHostname:    GetEnv("HEADNSCALE_TS_HOSTNAME", "headnscale"),
+		TailscaleDir:         GetEnv("HEADNSCALE_TS_DIR", "/var/lib/headnscale"),
 
 		// Sink config
 		ExtraRecordsFile: GetEnv("HEADNSCALE_JSON_PATH", ""),
