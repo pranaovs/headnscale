@@ -32,6 +32,7 @@ All sources and sinks are optional and enabled via environment variables.
 | `HEADNSCALE_NO_BASE_DOMAIN` | No | `false` | Create additional records without base domain |
 | `HEADNSCALE_REFRESH_SECONDS` | No | `60` | How often to scan for changes |
 | `HEADNSCALE_PORT` | No | `8080` | Port for internal HTTP server (health checks, hosts.txt) |
+| `HEADNSCALE_WILDCARD` | No | `false` | Create wildcard DNS records for subdomains |
 | `HEADNSCALE_STATE_DIR` | No | `/var/lib/headnscale` | Persistent state directory |
 
 #### Docker Source
@@ -46,7 +47,6 @@ Set `HEADNSCALE_DOCKER_ENABLED` to enable.
 | `HEADNSCALE_NODE_IP` | Yes | - | IPv4 address of the node |
 | `HEADNSCALE_NODE_IP6` | No | - | IPv6 address of the node |
 | `DOCKER_HOST` | No | `unix:///var/run/docker.sock` | Docker host socket path |
-| `DOCKER_CONTEXT` | No | - | Docker Context |
 
 #### Tailscale Source
 
@@ -65,6 +65,7 @@ Set `HEADNSCALE_TS_ENABLED` to enable.
 |----------|----------|---------|-------------|
 | `HEADNSCALE_JSON_PATH` | No | - | Path to write the extra_records.json file (enables Headscale sink) |
 | `HEADNSCALE_HOSTS_PATH` | No | - | Path to write the hosts file (enables Hosts sink) |
+| `HEADNSCALE_DNS_PORT` | No | - | DNS port for serving DNS queries (enabled DNS sink) |
 
 ### Deployment
 
