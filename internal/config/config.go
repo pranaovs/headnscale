@@ -14,6 +14,7 @@ func Load() Config {
 		// Common config
 		NoBaseDomain: GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
 		BaseDomain:   GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
+		Wildcard:     GetEnv("HEADNSCALE_WILDCARD", "false") == "true",
 		Node: types.Node{
 			Hostname: GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
 		},
@@ -54,6 +55,7 @@ func Load() Config {
 		if ip4 == "" {
 			log.Fatal("HEADNSCALE_NODE_IP is required when Docker source is enabled")
 		}
+
 		cfg.Node.IP.IPv4 = net.ParseIP(ip4)
 		if cfg.Node.IP.IPv4 == nil {
 			log.Fatalf("Invalid IPv4 address: %s", ip4)
@@ -71,6 +73,13 @@ func Load() Config {
 			log.Fatal("HEADNSCALE_NODE_HOSTNAME is required when Docker source is enabled")
 		}
 	}
+
+	// Dns sink
+	dnsPort, err := strconv.Atoi(GetEnv("HEADNSCALE_DNS_PORT", "0"))
+	if err != nil || dnsPort < 0 || dnsPort > 65535 {
+		log.Fatal("Invalid HEADNSCALE_DNS_PORT value")
+	}
+	cfg.DNSPort = dnsPort
 
 	return cfg
 }

@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/pranaovs/headnscale/internal/config"
+	"github.com/pranaovs/headnscale/internal/sink/dns"
 	"github.com/pranaovs/headnscale/internal/sink/headscale"
 	"github.com/pranaovs/headnscale/internal/sink/hosts"
 	"github.com/pranaovs/headnscale/internal/source/docker"
@@ -40,7 +41,9 @@ func main() {
 	if cfg.ExtraRecordsFile != "" {
 		sinks = append(sinks, headscale.New(cfg))
 	}
-
+	if cfg.DNSPort != 0 {
+		sinks = append(sinks, dns.New(cfg))
+	}
 	// Setup and start all modules
 	if err := initializeModules(ctx, sources, sinks); err != nil {
 		log.Fatalf("Failed to initialize modules: %v", err)
@@ -206,5 +209,8 @@ func logStartup(config config.Config) {
 	}
 	if config.ExtraRecordsFile != "" {
 		log.Printf(" - Extra Records File: %s", config.ExtraRecordsFile)
+	}
+	if config.DNSPort != 0 {
+		log.Printf(" - DNS Port: %d", config.DNSPort)
 	}
 }
