@@ -14,6 +14,7 @@ func Load() Config {
 		// Common config
 		NoBaseDomain: GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
 		BaseDomain:   GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
+		Wildcard:     GetEnv("HEADNSCALE_WILDCARD", "false") == "true",
 		Node: types.Node{
 			Hostname: GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
 		},

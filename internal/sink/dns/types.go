@@ -11,6 +11,7 @@ import (
 type Sink struct {
 	baseDomain   string
 	noBaseDomain bool
+	wildcard     bool
 	dnsIP        net.IP
 	dnsPort      int
 	srv          *dns.Server

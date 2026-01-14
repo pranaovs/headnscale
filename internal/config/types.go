@@ -10,6 +10,7 @@ type Config struct {
 	// Common
 	NoBaseDomain bool
 	BaseDomain   string
+	Wildcard     bool
 	Node         types.Node
 	Refresh      time.Duration
 	Port         int

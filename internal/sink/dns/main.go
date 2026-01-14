@@ -15,6 +15,7 @@ func New(config config.Config) *Sink {
 	return &Sink{
 		noBaseDomain: config.NoBaseDomain,
 		baseDomain:   config.BaseDomain,
+		wildcard:     config.Wildcard,
 		dnsIP:        net.IPv4(0, 0, 0, 0),
 		dnsPort:      config.DNSPort,
 	}
@@ -28,11 +29,11 @@ func (s *Sink) Initialize(ctx context.Context) error {
 	}
 
 	go func() {
+		log.Printf("Starting DNS server on %s", s.srv.Addr)
 		if err := s.srv.ListenAndServe(); err != nil {
-			log.Printf("DNS Server exited: %v\n", err)
+			log.Printf("DNS server error: %v", err)
 		}
 	}()
-
 	return nil
 }
 
