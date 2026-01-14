@@ -11,6 +11,14 @@ import (
 
 func Load() Config {
 	cfg := Config{
+		// Common config
+		NoBaseDomain: GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
+		BaseDomain:   GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
+		Node: types.Node{
+			Hostname: GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
+		},
+		StateDir: GetEnv("HEADNSCALE_STATE_DIR", "/var/lib/headnscale"),
+
 		// Docker source config
 		DockerEnabled: GetEnv("HEADNSCALE_DOCKER_ENABLED", "") != "",
 		LabelKey:      GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
@@ -24,14 +32,6 @@ func Load() Config {
 		// Sink config
 		ExtraRecordsFile: GetEnv("HEADNSCALE_JSON_PATH", ""),
 		HostsFile:        GetEnv("HEADNSCALE_HOSTS_PATH", ""),
-		DnsPort:          GetEnvInt("HEADNSCALE_DNS_PORT", 0),
-
-		// Common config
-		NoBaseDomain: GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
-		BaseDomain:   GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
-		Node: types.Node{
-			Hostname: GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
-		},
 	}
 
 	// Parse refresh duration
@@ -71,11 +71,6 @@ func Load() Config {
 		if cfg.Node.Hostname == "" {
 			log.Fatal("HEADNSCALE_NODE_HOSTNAME is required when Docker source is enabled")
 		}
-	}
-
-	if cfg.DnsPort <= 0 || cfg.DnsPort > 65535 {
-		log.Fatal("Invalid HEADNSCALE_DNS_PORT value")
-		cfg.DnsPort = 0
 	}
 
 	return cfg

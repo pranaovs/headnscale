@@ -17,20 +17,40 @@ func NodesEqual(a, b []types.Node) bool {
 		return true
 	}
 
-	// Create map for O(n) lookup instead of O(n²)
-	index := make(map[string]types.Node, len(a))
+	// Build a map of hostname -> list of IPs to handle duplicate hostnames
+	indexA := make(map[string][]types.NodeIP, len(a))
 	for _, n := range a {
-		index[n.Hostname] = n
+		indexA[n.Hostname] = append(indexA[n.Hostname], n.IP)
 	}
 
+	indexB := make(map[string][]types.NodeIP, len(b))
 	for _, n := range b {
-		other, ok := index[n.Hostname]
-		if !ok {
+		indexB[n.Hostname] = append(indexB[n.Hostname], n.IP)
+	}
+
+	// Check all hostnames match
+	if len(indexA) != len(indexB) {
+		return false
+	}
+
+	for hostname, ipsA := range indexA {
+		ipsB, ok := indexB[hostname]
+		if !ok || len(ipsA) != len(ipsB) {
 			return false
 		}
 
-		if !equalNodeIP(other.IP, n.IP) {
-			return false
+		// For each IP in A, find a match in B (order-independent)
+		for _, ipA := range ipsA {
+			found := false
+			for _, ipB := range ipsB {
+				if equalNodeIP(ipA, ipB) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return false
+			}
 		}
 	}
 

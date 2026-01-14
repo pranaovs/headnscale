@@ -7,6 +7,14 @@ import (
 )
 
 type Config struct {
+	// Common
+	NoBaseDomain bool
+	BaseDomain   string
+	Node         types.Node
+	Refresh      time.Duration
+	Port         int
+	StateDir     string
+
 	// Docker source
 	DockerEnabled bool
 	LabelKey      string
@@ -20,12 +28,4 @@ type Config struct {
 	// Sinks
 	ExtraRecordsFile string
 	HostsFile        string
-	DnsPort          int
-
-	// Common
-	NoBaseDomain bool
-	BaseDomain   string
-	Node         types.Node
-	Refresh      time.Duration
-	Port         int
 }

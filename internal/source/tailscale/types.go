@@ -10,6 +10,7 @@ type Source struct {
 	hostname    string
 	loginServer string
 	forceReauth bool
+	dir         string
 	ts          ts
 }
 

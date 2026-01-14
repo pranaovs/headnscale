@@ -15,6 +15,7 @@ func New(config config.Config) *Source {
 		authKey:     config.TailscaleAuthKey,
 		hostname:    config.TailscaleHostname,
 		loginServer: config.TailscaleLoginServer,
+		dir:         config.StateDir + "/" + config.TailscaleHostname,
 		forceReauth: false,
 	}
 }
@@ -24,6 +25,7 @@ func (s *Source) Initialize(ctx context.Context) error {
 		Hostname:   s.hostname,
 		AuthKey:    s.authKey,
 		ControlURL: s.loginServer,
+		Dir:        s.dir,
 	}
 
 	if _, err := srv.Up(ctx); err != nil {
@@ -72,7 +74,7 @@ func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
 			}
 		}
 		nodes = append(nodes, types.Node{
-			Hostname: peer.HostName,
+			Hostname: hostNameFromDNSName(peer.DNSName),
 			IP:       ips,
 		})
 	}
