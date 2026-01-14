@@ -28,4 +28,5 @@ type Config struct {
 	// Sinks
 	ExtraRecordsFile string
 	HostsFile        string
+	DNSPort          int
 }

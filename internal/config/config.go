@@ -73,5 +73,12 @@ func Load() Config {
 		}
 	}
 
+	// Dns sink
+	dnsPort, err := strconv.Atoi(GetEnv("HEADNSCALE_DNS_PORT", "0"))
+	if err != nil || dnsPort < 0 || dnsPort > 65535 {
+		log.Fatal("Invalid HEADNSCALE_DNS_PORT value")
+	}
+	cfg.DNSPort = dnsPort
+
 	return cfg
 }
