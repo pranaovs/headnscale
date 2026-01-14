@@ -6,7 +6,9 @@ import (
 )
 
 type Source struct {
-	cli      sdkclient.SDKClient
-	labelKey string
-	node     types.Node
+	cli           sdkclient.SDKClient
+	dockerHost    string
+	dockerContext string
+	labelKey      string
+	node          types.Node
 }

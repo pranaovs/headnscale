@@ -14,13 +14,14 @@ import (
 
 func New(config config.Config) *Source {
 	return &Source{
-		labelKey: config.LabelKey,
-		node:     config.Node,
+		dockerHost: config.DockerHost,
+		labelKey:   config.LabelKey,
+		node:       config.Node,
 	}
 }
 
 func (s *Source) Initialize(ctx context.Context) error {
-	cli, err := sdkclient.New(ctx, GetClientOption()...)
+	cli, err := sdkclient.New(ctx, GetClientOption(s)...)
 	if err != nil {
 		return err
 	}

@@ -47,6 +47,7 @@ Set `HEADNSCALE_DOCKER_ENABLED` to enable.
 | `HEADNSCALE_NODE_IP` | Yes | - | IPv4 address of the node |
 | `HEADNSCALE_NODE_IP6` | No | - | IPv6 address of the node |
 | `DOCKER_HOST` | No | `unix:///var/run/docker.sock` | Docker host socket path |
+| `DOCKER_CONTEXT` | No | - | Docker context to use |
 
 #### Tailscale Source
 

@@ -22,6 +22,8 @@ func Load() Config {
 
 		// Docker source config
 		DockerEnabled: GetEnv("HEADNSCALE_DOCKER_ENABLED", "") != "",
+		DockerHost:    GetEnv("DOCKER_HOST", "unix:///var/run/docker.sock"),
+		DockerContext: GetEnv("DOCKER_CONTEXT", ""),
 		LabelKey:      GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
 
 		// Tailscale source config

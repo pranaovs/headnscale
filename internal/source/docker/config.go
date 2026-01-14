@@ -2,14 +2,13 @@ package docker
 
 import (
 	"github.com/docker/go-sdk/client"
-	"github.com/pranaovs/headnscale/internal/config"
 )
 
-func GetClientOption() []client.ClientOption {
+func GetClientOption(s *Source) []client.ClientOption {
 	options := []client.ClientOption{}
 
-	options = append(options, client.WithDockerHost("unix:///var/run/docker.sock"))
-	options = append(options, client.WithDockerContext(config.GetEnv("DOCKER_CONTEXT", "")))
+	options = append(options, client.WithDockerHost(s.dockerHost))
+	options = append(options, client.WithDockerContext(s.dockerContext))
 
 	return options
 }

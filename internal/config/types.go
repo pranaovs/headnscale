@@ -18,6 +18,8 @@ type Config struct {
 
 	// Docker source
 	DockerEnabled bool
+	DockerHost    string
+	DockerContext string
 	LabelKey      string
 
 	// Tailscale source
