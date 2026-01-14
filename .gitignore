@@ -36,3 +36,4 @@ go.work.sum
 extra_records.json
 hosts.txt
 /headnscale
+/test
