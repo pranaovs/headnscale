@@ -3,8 +3,6 @@ package config
 import (
 	"log"
 	"net"
-
-	"github.com/pranaovs/headnscale/internal/types"
 )
 
 func Load() Config {
@@ -26,10 +24,14 @@ func Load() Config {
 
 	// Docker Source
 	if GetEnvBool("HEADNSCALE_DOCKER_ENABLED", false) {
+		// Initialize Docker Config first
+		cfg.Source.Docker.Enabled = true
+		cfg.Source.Docker.Host = GetEnv("DOCKER_HOST", "unix:///var/run/docker.sock")
+		cfg.Source.Docker.Context = GetEnv("DOCKER_CONTEXT", "")
+		cfg.Source.Docker.LabelKey = GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain")
+
 		// Load Node Information (Required for Docker)
-		cfg.Source.Docker.Node = types.Node{
-			Hostname: GetEnvRequired("HEADNSCALE_NODE_HOSTNAME"),
-		}
+		cfg.Source.Docker.Node.Hostname = GetEnvRequired("HEADNSCALE_NODE_HOSTNAME")
 
 		// Validate IPv4
 		ip4Str := GetEnvRequired("HEADNSCALE_NODE_IP")
@@ -46,14 +48,6 @@ func Load() Config {
 				log.Fatalf("Config Error: HEADNSCALE_NODE_IP6 '%s' is not a valid IP address", ip6Str)
 			}
 			cfg.Source.Docker.Node.IPv6 = ip6
-		}
-
-		// Initialize Docker Config
-		cfg.Source.Docker = Docker{
-			Enabled:  true,
-			Host:     GetEnv("DOCKER_HOST", "unix:///var/run/docker.sock"),
-			Context:  GetEnv("DOCKER_CONTEXT", ""),
-			LabelKey: GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
 		}
 	}
 
