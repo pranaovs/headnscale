@@ -48,7 +48,7 @@ func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
 	nodes := []types.Node{}
 
 	for _, peer := range status.Peer {
-		ips := types.NodeIP{}
+		ips := types.IP{}
 		for _, ip := range peer.TailscaleIPs {
 			if ip.Is4() {
 				ips.IPv4 = ip.AsSlice()

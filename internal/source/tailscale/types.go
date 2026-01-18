@@ -6,8 +6,8 @@ import (
 )
 
 type Source struct {
-	*config.Common
-	*config.Tailscale
+	config.Common
+	config.Tailscale
 	cli     *local.Client
 	watcher *local.IPNBusWatcher
 }

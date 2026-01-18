@@ -67,14 +67,14 @@ func (s *Sink) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	}
 }
 
-func questionToNodeIP(questionName string, BaseDomain string, NoBaseDomain bool, nodes []types.Node) (types.NodeIP, bool) {
+func questionToNodeIP(questionName string, BaseDomain string, noBaseDomain bool, nodes []types.Node) (types.IP, bool) {
 	questionName = strings.ToLower(strings.TrimSuffix(questionName, "."))
 	BaseDomain = strings.ToLower(strings.TrimSuffix(BaseDomain, "."))
 
 	// First pass, exact match
 	for _, node := range nodes {
 		nodeName := strings.ToLower(node.Hostname)
-		if NoBaseDomain && nodeName == questionName {
+		if noBaseDomain && nodeName == questionName {
 			return node.IP, true
 		}
 		if BaseDomain != "" {
@@ -94,11 +94,11 @@ func questionToNodeIP(questionName string, BaseDomain string, NoBaseDomain bool,
 				return node.IP, true
 			}
 		}
-		if NoBaseDomain {
+		if noBaseDomain {
 			if dns.IsSubDomain(nodeName+".", questionName+".") && questionName != nodeName {
 				return node.IP, true
 			}
 		}
 	}
-	return types.NodeIP{}, false
+	return types.IP{}, false
 }

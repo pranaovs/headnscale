@@ -8,8 +8,8 @@ import (
 )
 
 type Sink struct {
-	*config.Common
-	*config.Hosts
+	config.Common
+	config.Hosts
 
 	// Runtime state
 	ips     []net.IP

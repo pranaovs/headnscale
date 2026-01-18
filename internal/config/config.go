@@ -10,7 +10,7 @@ import (
 func Load() Config {
 	// Initialize the Config struct with embedded Common and nested Sink
 	cfg := Config{
-		Common: &Common{
+		Common: Common{
 			BaseDomain:   GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
 			NoBaseDomain: GetEnvBool("HEADNSCALE_NO_BASE_DOMAIN", false),
 			Wildcard:     GetEnvBool("HEADNSCALE_WILDCARD", false),
@@ -29,7 +29,6 @@ func Load() Config {
 	// Docker Source
 	if GetEnvBool("HEADNSCALE_DOCKER_ENABLED", false) {
 		// Load Node Information (Required for Docker)
-		// Accessing .Node works because Common is embedded
 		cfg.Source.Docker.Node = types.Node{
 			Hostname: GetEnvRequired("HEADNSCALE_NODE_HOSTNAME"),
 		}
@@ -40,7 +39,7 @@ func Load() Config {
 		if ip4 == nil {
 			log.Fatalf("Config Error: HEADNSCALE_NODE_IP '%s' is not a valid IP address", ip4Str)
 		}
-		cfg.Source.Docker.Node.IP.IPv4 = ip4
+		cfg.Source.Docker.Node.IPv4 = ip4
 
 		// Validate IPv6 (Optional)
 		if ip6Str := GetEnv("HEADNSCALE_NODE_IP6", ""); ip6Str != "" {
@@ -48,11 +47,12 @@ func Load() Config {
 			if ip6 == nil {
 				log.Fatalf("Config Error: HEADNSCALE_NODE_IP6 '%s' is not a valid IP address", ip6Str)
 			}
-			cfg.Source.Docker.Node.IP.IPv6 = ip6
+			cfg.Source.Docker.Node.IPv6 = ip6
 		}
 
 		// Initialize Docker Config
-		cfg.Source.Docker = &Docker{
+		cfg.Source.Docker = Docker{
+			Enabled:  true,
 			Host:     GetEnv("DOCKER_HOST", "unix:///var/run/docker.sock"),
 			Context:  GetEnv("DOCKER_CONTEXT", ""),
 			LabelKey: GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
@@ -61,7 +61,8 @@ func Load() Config {
 
 	// 2. Tailscale Source
 	if GetEnvBool("HEADNSCALE_TS_ENABLED", false) {
-		cfg.Source.Tailscale = &Tailscale{
+		cfg.Source.Tailscale = Tailscale{
+			Enabled:     true,
 			LoginServer: GetEnv("HEADNSCALE_TS_LOGIN_SERVER", ""),
 			AuthKey:     GetEnv("TS_AUTHKEY", ""),
 			Hostname:    GetEnv("HEADNSCALE_TS_HOSTNAME", "headnscale"),
@@ -74,7 +75,8 @@ func Load() Config {
 
 	// 1. Headscale JSON Sink
 	if GetEnvBool("HEADSCALE_JSON_ENABLED", false) {
-		cfg.Sink.Headscale = &Headscale{
+		cfg.Sink.Headscale = Headscale{
+			Enabled:          true,
 			ExtraRecordsFile: GetEnvRequired("HEADNSCALE_JSON_PATH"),
 		}
 	}
@@ -83,9 +85,10 @@ func Load() Config {
 	if GetEnvBool("HEADSCALE_HOSTS_ENABLED", false) {
 		localPort := GetEnvPort("HEADNSCALE_HOSTS_PORT", 80)
 
-		cfg.Sink.Hosts = &Hosts{
-			Path: GetEnvRequired("HEADNSCALE_HOSTS_PATH"),
-			Port: localPort,
+		cfg.Sink.Hosts = Hosts{
+			Enabled: true,
+			Path:    GetEnvRequired("HEADNSCALE_HOSTS_PATH"),
+			Port:    localPort,
 			// Default TS port to the same as local port if not explicitly set
 			TSPort: GetEnvPort("HEADNSCALE_HOSTS_TS_PORT", localPort),
 		}
@@ -95,8 +98,9 @@ func Load() Config {
 	if GetEnvBool("HEADNSCALE_DNS_ENABLED", false) {
 		localPort := GetEnvPort("HEADNSCALE_DNS_PORT", 53)
 
-		cfg.Sink.DNS = &DNS{
-			Port: localPort,
+		cfg.Sink.DNS = DNS{
+			Enabled: true,
+			Port:    localPort,
 			// Default TS port to the same as local port if not explicitly set
 			TSPort: GetEnvPort("HEADNSCALE_DNS_TS_PORT", localPort),
 		}
