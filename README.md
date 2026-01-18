@@ -56,7 +56,7 @@ Set `HEADNSCALE_TS_ENABLED` to enable.
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `HEADNSCALE_TS_ENABLED` | No | - | Set to any value to enable Tailscale source |
-| `HEADNSCALE_TS_AUTHKEY` | No | - | Tailscale auth key (enables Tailscale source when set) |
+| `TS_AUTHKEY` | No | - | Tailscale auth key |
 | `HEADNSCALE_TS_LOGIN_SERVER` | No | - | Tailscale/Headscale login server URL |
 | `HEADNSCALE_TS_HOSTNAME` | No | `headnscale` | Hostname for this instance on the Tailscale network |
 
@@ -92,7 +92,7 @@ services:
       - HEADNSCALE_NODE_IP6=<Tailscale IPv6>
       # Tailscale source
       - HEADNSCALE_TS_ENABLED=true
-      - HEADNSCALE_TS_AUTHKEY=<your-auth-key>
+      - TS_AUTHKEY=<your-auth-key>
       - HEADNSCALE_TS_LOGIN_SERVER=https://headscale.example.com
       # Sinks
       - HEADNSCALE_JSON_PATH=/data/extra_records.json

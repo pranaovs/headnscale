@@ -29,7 +29,7 @@ func Load() Config {
 		// Tailscale source config
 		TailscaleEnabled:     GetEnv("HEADNSCALE_TS_ENABLED", "") != "",
 		TailscaleLoginServer: GetEnv("HEADNSCALE_TS_LOGIN_SERVER", ""),
-		TailscaleAuthKey:     GetEnv("HEADNSCALE_TS_AUTHKEY", ""),
+		TailscaleAuthKey:     GetEnv("TS_AUTHKEY", ""),
 		TailscaleHostname:    GetEnv("HEADNSCALE_TS_HOSTNAME", "headnscale"),
 
 		// Sink config
