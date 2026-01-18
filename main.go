@@ -145,10 +145,13 @@ func watchSources(ctx context.Context, sources []types.Source, sinks []types.Sin
 			return
 		}
 
+		// Copy merged state while holding the lock
+		mu.Lock()
 		var allNodes []types.Node
 		for _, nodes := range sourceState {
 			allNodes = append(allNodes, nodes...)
 		}
+		mu.Unlock()
 
 		log.Printf("Writing merged update: %d total nodes", len(allNodes))
 
@@ -180,8 +183,9 @@ func watchSources(ctx context.Context, sources []types.Source, sinks []types.Sin
 
 					mu.Lock()
 					sourceState[src] = nodes
-					writeToSinks()
 					mu.Unlock()
+
+					writeToSinks()
 				case err, ok := <-errChan:
 					if !ok {
 						return
