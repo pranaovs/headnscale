@@ -71,7 +71,7 @@ Set `HEADNSCALE_JSON_ENABLED` to `true` to enable.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `HEADSCALE_JSON_ENABLED` | No | - | Set to `true` to enable Headscale sink |
+| `HEADNSCALE_JSON_ENABLED` | No | `false` | Set to `true` to enable Headscale sink |
 | `HEADNSCALE_JSON_PATH` | Yes | - | Path to write the extra_records.json file |
 
 
@@ -81,10 +81,10 @@ Set `HEADNSCALE_HOSTS_ENABLED` to `true` to enable.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `HEADSCALE_HOSTS_ENABLED` | No | `false` | Set to `true` to enable Hosts sink |
+| `HEADNSCALE_HOSTS_ENABLED` | No | `false` | Set to `true` to enable Hosts sink |
 | `HEADNSCALE_HOSTS_PATH` | Yes | - | Path to write the hosts file |
-| `HEADNSCALE_HOSTS_PORT` | No | `0` | Port to serve hosts file under `/hosts` and `/hosts.txt` (`0` to disable) |
-| `HEADNSCALE_HOSTS_TS_PORT` | No | `HEADNSCALE_HOSTS_PORT` | Port on tailnet to serve hosts file under `/hosts` and `/hosts.txt` (`0` to disable) |
+| `HEADNSCALE_HOSTS_PORT` | No | `80` | Port to serve hosts file under `/hosts` and `/hosts.txt` |
+| `HEADNSCALE_HOSTS_TS_PORT` | No | `HEADNSCALE_HOSTS_PORT` | Port on tailnet to serve hosts file under `/hosts` and `/hosts.txt` |
 
 
 ##### DNS Sink
@@ -94,8 +94,8 @@ Set `HEADNSCALE_DNS_ENABLED` to `true` to enable.
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `HEADNSCALE_DNS_ENABLED` | No | `false` | Set to `true` to enable DNS sink |
-| `HEADNSCALE_DNS_PORT` | No | `0` | DNS port for serving DNS queries  |
-| `HEADNSCALE_DNS_TS_PORT` | No | `HEADNSCALE_DNS_PORT` | DNS port on tailnet for serving DNS queries (`0` to disable) |
+| `HEADNSCALE_DNS_PORT` | No | `53` | DNS port for serving DNS queries |
+| `HEADNSCALE_DNS_TS_PORT` | No | `HEADNSCALE_DNS_PORT` | DNS port on tailnet for serving DNS queries |
 
 
 ### Deployment
@@ -127,8 +127,11 @@ services:
       - TS_AUTHKEY=<your-auth-key>
       - HEADNSCALE_TS_LOGIN_SERVER=https://headscale.example.com
       # Sinks
+      - HEADNSCALE_JSON_ENABLED=true
       - HEADNSCALE_JSON_PATH=/data/extra_records.json
+      - HEADNSCALE_HOSTS_ENABLED=true
       - HEADNSCALE_HOSTS_PATH=/data/hosts.txt
+      - HEADNSCALE_DNS_ENABLED=true
       - HEADNSCALE_DNS_PORT=53
       # Common
       - HEADNSCALE_BASE_DOMAIN=ts.net
