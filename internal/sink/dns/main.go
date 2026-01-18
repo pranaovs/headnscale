@@ -16,8 +16,7 @@ func New(config config.Config) *Sink {
 		Common:   config.Common,
 		DNS:      config.Sink.DNS,
 		localIPs: []net.IP{net.IPv4zero, net.IPv6zero},
-		tsServer: config.TSNet.GetServer(),
-		tsClient: config.TSNet.GetClient(),
+		TSNet:    &config.TSNet,
 	}
 }
 
@@ -45,20 +44,21 @@ func (s *Sink) Initialize(ctx context.Context) error {
 		}(srv, addr)
 	}
 
-	// Tailscale DNS Servers
-	if s.tsServer != nil && s.tsClient != nil {
-		status, err := s.tsClient.Status(ctx)
-		if err != nil {
-			log.Printf("Failed to get Tailscale status: %v", err)
-			return err
+	if s.TailscaleServe {
+		var ips []net.IP
+		if s.TSNet.IPv4 != nil {
+			ips = append(ips, s.TSNet.IPv4)
+		}
+		if s.TSNet.IPv6 != nil {
+			ips = append(ips, s.TSNet.IPv6)
 		}
 
-		for _, ip := range status.TailscaleIPs {
-			// Construct specific address (e.g., "100.100.100.100:53")
-			addr := net.JoinHostPort(ip.String(), strconv.Itoa(s.Port))
+		for _, ip := range ips {
+			// Use s.TSPort (from *config.DNS) for the Tailnet listener
+			addr := net.JoinHostPort(ip.String(), strconv.Itoa(s.TSPort))
 
-			// tsnet requires the specific IP address to be passed to ListenPacket
-			pc, err := s.tsServer.ListenPacket("udp", addr)
+			// Use the existing tsnet server to create the listener
+			pc, err := s.TSNet.Srv.ListenPacket("udp", addr)
 			if err != nil {
 				log.Printf("Failed to listen on Tailscale UDP (%s): %v", addr, err)
 				continue
