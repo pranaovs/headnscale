@@ -2,34 +2,75 @@ package hosts
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/pranaovs/headnscale/internal/config"
 	"github.com/pranaovs/headnscale/internal/types"
 )
 
-func New(config config.Config) *Sink {
+func New(cfg config.Config) *Sink {
 	return &Sink{
-		Common: config.Common,
-		Hosts:  config.Sink.Hosts,
+		Common: cfg.Common,
+		Hosts:  cfg.Sink.Hosts,
+		tsNet:  &cfg.TSNet,
 		ips:    []net.IP{net.IPv4zero, net.IPv6zero},
 	}
 }
 
 func (s *Sink) Initialize(ctx context.Context) error {
-	// Helper function handles all the setup complexity
+	// 1. Start Local Servers
 	for _, ip := range s.ips {
-		srv, err := startServer(ip, s.Port, s.Path)
+		// Determine network (tcp4 vs tcp6)
+		network := "tcp4"
+		addr := fmt.Sprintf("%s:%d", ip.String(), s.Port)
+
+		if ip.To4() == nil {
+			network = "tcp6"
+			addr = fmt.Sprintf("[%s]:%d", ip.String(), s.Port)
+		}
+
+		// Create standard OS listener
+		ln, err := net.Listen(network, addr)
 		if err != nil {
-			log.Printf("Failed to start HTTP server on %s: %v", ip, err)
+			log.Printf("Failed to listen on local %s: %v", addr, err)
 			return err
 		}
-		s.servers = append(s.servers, srv)
+
+		// Hand off to HTTP starter
+		s.servers = append(s.servers, startHTTP(ln, s.Path))
 	}
 
-	log.Printf("Hosts sink initialized, serving on port %d (Dual Stack)", s.Port)
+	// 2. Start Tailscale Servers
+	if s.tsNet != nil && s.tsNet.Srv != nil {
+		// Collect IPs populated in main.go
+		var tsIPs []net.IP
+		if s.tsNet.IPv4 != nil {
+			tsIPs = append(tsIPs, s.tsNet.IPv4)
+		}
+		if s.tsNet.IPv6 != nil {
+			tsIPs = append(tsIPs, s.tsNet.IPv6)
+		}
+
+		for _, ip := range tsIPs {
+			// Use s.TSPort for Tailscale interface
+			addr := net.JoinHostPort(ip.String(), strconv.Itoa(s.TSPort))
+
+			// Create Tailscale listener
+			ln, err := s.tsNet.Srv.Listen("tcp", addr)
+			if err != nil {
+				log.Printf("Failed to listen on Tailscale %s: %v", addr, err)
+				continue
+			}
+
+			// Hand off to HTTP starter
+			s.servers = append(s.servers, startHTTP(ln, s.Path))
+		}
+	}
+
 	return nil
 }
 

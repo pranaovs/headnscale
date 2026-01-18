@@ -11,13 +11,11 @@ func Load() Config {
 	// Initialize the Config struct with embedded Common and nested Sink
 	cfg := Config{
 		Common: Common{
-			BaseDomain:   GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
-			NoBaseDomain: GetEnvBool("HEADNSCALE_NO_BASE_DOMAIN", false),
-			Wildcard:     GetEnvBool("HEADNSCALE_WILDCARD", false),
-			Refresh:      GetEnvDuration("HEADNSCALE_REFRESH_SECONDS", 60),
-			StateDir:     GetEnv("HEADNSCALE_STATE_DIR", "/var/lib/headnscale"),
-		},
-		Sink: Sink{
+			BaseDomain:     GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
+			NoBaseDomain:   GetEnvBool("HEADNSCALE_NO_BASE_DOMAIN", false),
+			Wildcard:       GetEnvBool("HEADNSCALE_WILDCARD", false),
+			Refresh:        GetEnvDuration("HEADNSCALE_REFRESH_SECONDS", 60),
+			StateDir:       GetEnv("HEADNSCALE_STATE_DIR", "/var/lib/headnscale"),
 			TailscaleServe: GetEnvBool("HEADNSCALE_TS_SERVE", false),
 		},
 	}

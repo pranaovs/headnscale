@@ -16,11 +16,12 @@ type Config struct {
 }
 
 type Common struct {
-	NoBaseDomain bool
-	BaseDomain   string
-	Wildcard     bool
-	Refresh      time.Duration
-	StateDir     string
+	NoBaseDomain   bool
+	BaseDomain     string
+	Wildcard       bool
+	Refresh        time.Duration
+	StateDir       string
+	TailscaleServe bool
 }
 
 type Source struct {
@@ -45,16 +46,14 @@ type (
 )
 
 type Sink struct {
-	TailscaleServe bool
-	Headscale      Headscale
-	Hosts          Hosts
-	DNS            DNS
+	Headscale Headscale
+	Hosts     Hosts
+	DNS       DNS
 }
 
 type (
 	Headscale struct {
-		Enabled bool
-
+		Enabled          bool
 		ExtraRecordsFile string
 	}
 	Hosts struct {

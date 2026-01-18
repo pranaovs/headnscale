@@ -26,7 +26,7 @@ func main() {
 	defer cancel()
 
 	// Create Tailscale server if enabled
-	if cfg.Source.Tailscale.Enabled || cfg.Sink.TailscaleServe {
+	if cfg.Source.Tailscale.Enabled || cfg.TailscaleServe {
 		cfg.TSNet.Srv = &tsnet.Server{
 			Hostname:   cfg.Source.Tailscale.Hostname,
 			AuthKey:    cfg.Source.Tailscale.AuthKey,
@@ -54,9 +54,23 @@ func main() {
 			log.Fatalf("Failed to create Tailscale local client: %v", err)
 		}
 
-		cfg.TSNet.Hostname = cfg.TSNet.Srv.Hostname
+		status, err := cfg.TSNet.Cli.Status(ctx)
+		cfg.TSNet.Hostname = tailscale.HostNameFromDNSName(status.Self.DNSName)
+		if err != nil {
+			log.Fatalf("Failed to get Tailscale status: %v", err)
+		}
 
-		log.Printf("Tailscale server started (source: %t, serve: %t)", cfg.Source.Tailscale.Enabled, cfg.Sink.TailscaleServe)
+		for _, ip := range status.TailscaleIPs {
+			if ip.Is4() {
+				// ip.AsSlice() returns []byte, which is compatible with net.IP
+				cfg.TSNet.IPv4 = ip.AsSlice()
+			} else if ip.Is6() {
+				cfg.TSNet.IPv6 = ip.AsSlice()
+			} else {
+				log.Printf("Unknown IP type: %s", ip.String())
+			}
+		}
+		log.Printf("Tailscale server started (source: %t, serve: %t)", cfg.Source.Tailscale.Enabled, cfg.TailscaleServe)
 	}
 
 	// Initialize sources based on config
@@ -235,7 +249,7 @@ func logStartup(cfg config.Config) {
 	// Tailscale Source & Serve
 	tsEnabled := cfg.Source.Tailscale.Enabled
 	log.Printf(" - Tailscale Source: %t", tsEnabled)
-	log.Printf(" - Tailscale Serve: %t", cfg.Sink.TailscaleServe)
+	log.Printf(" - Tailscale Serve: %t", cfg.TailscaleServe)
 
 	if tsEnabled {
 		log.Printf("   - Tailscale Hostname: %s", cfg.Source.Tailscale.Hostname)

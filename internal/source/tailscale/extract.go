@@ -2,7 +2,7 @@ package tailscale
 
 import "strings"
 
-func hostNameFromDNSName(dnsName string) string {
+func HostNameFromDNSName(dnsName string) string {
 	// Remove trailing dot, if present
 	dnsName = strings.TrimSuffix(dnsName, ".")
 
