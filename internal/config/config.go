@@ -76,7 +76,7 @@ func Load() Config {
 
 	// 2. Hosts File Sink
 	if GetEnvBool("HEADSCALE_HOSTS_ENABLED", false) {
-		localPort := GetEnvPort("HEADNSCALE_HOSTS_PORT", 0)
+		localPort := GetEnvPort("HEADNSCALE_HOSTS_PORT", 80)
 
 		cfg.Sink.Hosts = &Hosts{
 			Path: GetEnvRequired("HEADNSCALE_HOSTS_PATH"),
@@ -88,7 +88,7 @@ func Load() Config {
 
 	// 3. DNS Sink
 	if GetEnvBool("HEADNSCALE_DNS_ENABLED", false) {
-		localPort := GetEnvPort("HEADNSCALE_DNS_PORT", 0)
+		localPort := GetEnvPort("HEADNSCALE_DNS_PORT", 53)
 
 		cfg.Sink.DNS = &DNS{
 			Port: localPort,

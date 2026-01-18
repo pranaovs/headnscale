@@ -16,60 +16,33 @@ func New(config config.Config) *Sink {
 		noBaseDomain: config.NoBaseDomain,
 		baseDomain:   config.BaseDomain,
 		wildcard:     config.Wildcard,
-		dnsIP:        net.IPv4(0, 0, 0, 0),
+		localIPs:     []net.IP{net.IPv4zero, net.IPv6zero},
 		dnsPort:      config.Sink.DNS.Port,
-		tsServer:     config.TSNet.GetServer(),
-		tsClient:     config.TSNet.GetClient(),
 	}
 }
 
 func (s *Sink) Initialize(ctx context.Context) error {
-	// 1. Start Local DNS Server
-	s.srv = &dns.Server{
-		Addr:    net.JoinHostPort(s.dnsIP.String(), strconv.Itoa(s.dnsPort)),
-		Net:     "udp",
-		Handler: s,
-	}
-
-	go func() {
-		log.Printf("Starting Local DNS server on %s", s.srv.Addr)
-		if err := s.srv.ListenAndServe(); err != nil {
-			log.Printf("Local DNS server error: %v", err)
-		}
-	}()
-
-	// 2. Start Tailscale DNS Servers (if enabled)
-	if s.tsServer != nil {
-		status, err := s.tsClient.Status(ctx)
-		if err != nil {
-			log.Printf("Failed to get Tailscale status: %v", err)
-			return err
+	for _, ip := range s.localIPs {
+		// Explicitly use udp4/udp6 to ensure clean binding on dual-stack OSs
+		network := "udp4"
+		if ip.To4() == nil {
+			network = "udp6"
 		}
 
-		for _, ip := range status.TailscaleIPs {
-			// Construct address explicitly (e.g., "100.x.y.z:53" or "[fd7a::1]:53")
-			addr := net.JoinHostPort(ip.String(), strconv.Itoa(s.dnsPort))
+		addr := net.JoinHostPort(ip.String(), strconv.Itoa(s.dnsPort))
+		srv := &dns.Server{
+			Addr:    addr,
+			Net:     network,
+			Handler: s,
+		}
+		s.localSrvs = append(s.localSrvs, srv)
 
-			// tsnet requires the IP to be explicitly specified
-			pc, err := s.tsServer.ListenPacket("udp", "0.0.0.0:53")
-			if err != nil {
-				log.Printf("Failed to listen on Tailscale UDP (%s): %v", addr, err)
-				continue
+		go func(server *dns.Server, address string) {
+			log.Printf("Starting Local DNS server on %s (%s)", address, server.Net)
+			if err := server.ListenAndServe(); err != nil {
+				log.Printf("Local DNS server error (%s): %v", address, err)
 			}
-
-			tsSrv := &dns.Server{
-				PacketConn: pc,
-				Handler:    s,
-			}
-			s.tsSrvs = append(s.tsSrvs, tsSrv)
-
-			go func(srv *dns.Server, address string) {
-				log.Printf("Starting Tailscale DNS server on %s", address)
-				if err := srv.ActivateAndServe(); err != nil {
-					log.Printf("Tailscale DNS server error (%s): %v", address, err)
-				}
-			}(tsSrv, addr)
-		}
+		}(srv, addr)
 	}
 
 	return nil
@@ -85,15 +58,10 @@ func (s *Sink) Process(ctx context.Context, nodes []types.Node) error {
 }
 
 func (s *Sink) Close() error {
-	if s.srv != nil {
-		if err := s.srv.Shutdown(); err != nil {
+	// Close all local servers
+	for _, srv := range s.localSrvs {
+		if err := srv.Shutdown(); err != nil {
 			log.Printf("Error shutting down local DNS: %v", err)
-		}
-	}
-
-	for _, tsSrv := range s.tsSrvs {
-		if err := tsSrv.Shutdown(); err != nil {
-			log.Printf("Error shutting down Tailscale DNS: %v", err)
 		}
 	}
 	return nil

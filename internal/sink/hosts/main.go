@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net"
+	"time"
 
 	"github.com/pranaovs/headnscale/internal/config"
 	"github.com/pranaovs/headnscale/internal/types"
@@ -14,21 +15,24 @@ func New(config config.Config) *Sink {
 		filePath:     config.Sink.Hosts.Path,
 		noBaseDomain: config.NoBaseDomain,
 		baseDomain:   config.BaseDomain,
-		httpIP:       net.IPv4(0, 0, 0, 0),
-		httpPort:     config.Sink.Hosts.Port,
+		// Listen on both IPv4 wildcard and IPv6 wildcard
+		ips:  []net.IP{net.IPv4zero, net.IPv6zero},
+		port: config.Sink.Hosts.Port,
 	}
 }
 
 func (s *Sink) Initialize(ctx context.Context) error {
-	s.server = newHTTPServer(s.httpIP, s.httpPort)
-	s.server.serve("/hosts", s.filePath)
-	s.server.serve("/hosts.txt", s.filePath)
-
-	if err := s.server.start(ctx); err != nil {
-		return err
+	// Helper function handles all the setup complexity
+	for _, ip := range s.ips {
+		srv, err := startServer(ip, s.port, s.filePath)
+		if err != nil {
+			log.Printf("Failed to start HTTP server on %s: %v", ip, err)
+			return err
+		}
+		s.servers = append(s.servers, srv)
 	}
 
-	log.Printf("Hosts sink initialized, HTTP server at %s:%d", s.httpIP, s.httpPort)
+	log.Printf("Hosts sink initialized, serving on port %d (Dual Stack)", s.port)
 	return nil
 }
 
@@ -49,8 +53,12 @@ func (s *Sink) Process(ctx context.Context, nodes []types.Node) error {
 }
 
 func (s *Sink) Close() error {
-	if s.server != nil {
-		return s.server.stop()
+	for _, srv := range s.servers {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("Error stopping HTTP server: %v", err)
+		}
+		cancel()
 	}
 	return nil
 }

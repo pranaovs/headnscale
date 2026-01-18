@@ -6,24 +6,21 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/pranaovs/headnscale/internal/types"
-	"tailscale.com/client/local"
-	"tailscale.com/tsnet"
 )
 
 type Sink struct {
 	baseDomain   string
 	noBaseDomain bool
 	wildcard     bool
-	dnsIP        net.IP
-	dnsPort      int
-	srv          *dns.Server
 
-	// Tailscale specific
-	tsServer *tsnet.Server
-	tsClient *local.Client
-	tsSrvs   []*dns.Server
+	// Local Configuration
+	dnsPort  int
+	localIPs []net.IP // Slice of IPs to listen on locally
 
-	// Mutex for async struct writes
+	// Server instances (Slices to handle multiple listeners)
+	localSrvs []*dns.Server
+
+	// Data
 	mu    sync.RWMutex
 	nodes []types.Node
 }

@@ -1,7 +1,6 @@
 package hosts
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net"
@@ -9,57 +8,45 @@ import (
 	"time"
 )
 
-type httpServer struct {
-	ip     net.IP
-	port   int
-	server *http.Server
-	mux    *http.ServeMux
-}
-
-func newHTTPServer(ip net.IP, port int) *httpServer {
-	return &httpServer{
-		ip:   ip,
-		port: port,
-		mux:  http.NewServeMux(),
-	}
-}
-
-func (h *httpServer) serve(path string, filePath string) {
-	h.mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+// startServer configures, listens, and serves the hosts file on a specific IP/Port.
+// It returns the running *http.Server instance or an error.
+func startServer(ip net.IP, port int, filePath string) (*http.Server, error) {
+	mux := http.NewServeMux()
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, filePath)
-	})
-	log.Printf("Registered HTTP endpoint: %s -> %s", path, filePath)
-}
-
-func (h *httpServer) start(ctx context.Context) error {
-	var addr string
-	if h.ip.To4() == nil {
-		addr = fmt.Sprintf("[%s]:%d", h.ip.String(), h.port)
-	} else {
-		addr = fmt.Sprintf("%s:%d", h.ip.String(), h.port)
 	}
 
-	h.server = &http.Server{
-		Addr:              addr,
-		Handler:           h.mux,
+	mux.HandleFunc("/hosts", handler)
+	mux.HandleFunc("/hosts.txt", handler)
+
+	// 2. Determine Network (Explicitly separate IPv4 and IPv6)
+	network := "tcp4"
+	addr := fmt.Sprintf("%s:%d", ip.String(), port)
+
+	if ip.To4() == nil {
+		network = "tcp6"
+		addr = fmt.Sprintf("[%s]:%d", ip.String(), port)
+	}
+
+	// 3. Create Listener
+	ln, err := net.Listen(network, addr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to listen on %s: %w", addr, err)
+	}
+
+	// 4. Create Server
+	srv := &http.Server{
+		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
+	// 5. Start in Background
 	go func() {
-		log.Printf("Starting HTTP server on %s", addr)
-		if err := h.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("HTTP server error: %v", err)
+		log.Printf("Starting HTTP server on %s (%s)", addr, network)
+		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
+			log.Printf("HTTP server error (%s): %v", addr, err)
 		}
 	}()
 
-	return nil
-}
-
-func (h *httpServer) stop() error {
-	if h.server != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		return h.server.Shutdown(ctx)
-	}
-	return nil
+	return srv, nil
 }
