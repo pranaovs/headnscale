@@ -1,7 +1,8 @@
 package headscale
 
+import "github.com/pranaovs/headnscale/internal/config"
+
 type Sink struct {
-	filePath     string
-	noBaseDomain bool
-	baseDomain   string
+	*config.Common
+	*config.Headscale
 }

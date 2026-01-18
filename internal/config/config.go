@@ -8,24 +8,29 @@ import (
 )
 
 func Load() Config {
+	// Initialize the Config struct with embedded Common and nested Sink
 	cfg := Config{
-		// Common Configuration
-		BaseDomain:     GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
-		NoBaseDomain:   GetEnvBool("HEADNSCALE_NO_BASE_DOMAIN", false),
-		Wildcard:       GetEnvBool("HEADNSCALE_WILDCARD", false),
-		Refresh:        GetEnvDuration("HEADNSCALE_REFRESH_SECONDS", 60),
-		StateDir:       GetEnv("HEADNSCALE_STATE_DIR", "/var/lib/headnscale"),
-		TailscaleServe: GetEnvBool("HEADNSCALE_TS_SERVE", false),
+		Common: &Common{
+			BaseDomain:   GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
+			NoBaseDomain: GetEnvBool("HEADNSCALE_NO_BASE_DOMAIN", false),
+			Wildcard:     GetEnvBool("HEADNSCALE_WILDCARD", false),
+			Refresh:      GetEnvDuration("HEADNSCALE_REFRESH_SECONDS", 60),
+			StateDir:     GetEnv("HEADNSCALE_STATE_DIR", "/var/lib/headnscale"),
+		},
+		Sink: Sink{
+			TailscaleServe: GetEnvBool("HEADNSCALE_TS_SERVE", false),
+		},
 	}
 
 	// ==========================================
 	// SOURCES
 	// ==========================================
 
-	// 1. Docker Source
+	// Docker Source
 	if GetEnvBool("HEADNSCALE_DOCKER_ENABLED", false) {
 		// Load Node Information (Required for Docker)
-		cfg.Node = types.Node{
+		// Accessing .Node works because Common is embedded
+		cfg.Source.Docker.Node = types.Node{
 			Hostname: GetEnvRequired("HEADNSCALE_NODE_HOSTNAME"),
 		}
 
@@ -35,7 +40,7 @@ func Load() Config {
 		if ip4 == nil {
 			log.Fatalf("Config Error: HEADNSCALE_NODE_IP '%s' is not a valid IP address", ip4Str)
 		}
-		cfg.Node.IP.IPv4 = ip4
+		cfg.Source.Docker.Node.IP.IPv4 = ip4
 
 		// Validate IPv6 (Optional)
 		if ip6Str := GetEnv("HEADNSCALE_NODE_IP6", ""); ip6Str != "" {
@@ -43,7 +48,7 @@ func Load() Config {
 			if ip6 == nil {
 				log.Fatalf("Config Error: HEADNSCALE_NODE_IP6 '%s' is not a valid IP address", ip6Str)
 			}
-			cfg.Node.IP.IPv6 = ip6
+			cfg.Source.Docker.Node.IP.IPv6 = ip6
 		}
 
 		// Initialize Docker Config

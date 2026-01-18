@@ -11,7 +11,9 @@ import (
 
 func New(config config.Config) *Source {
 	return &Source{
-		cli: config.TSNet.GetClient(),
+		Common:    config.Common,
+		Tailscale: config.Source.Tailscale,
+		cli:       config.TSNet.GetClient(),
 	}
 }
 

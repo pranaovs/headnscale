@@ -10,9 +10,8 @@ import (
 
 func New(config config.Config) *Sink {
 	return &Sink{
-		filePath:     config.Sink.Headscale.ExtraRecordsFile,
-		noBaseDomain: config.NoBaseDomain,
-		baseDomain:   config.BaseDomain,
+		Common:    config.Common,
+		Headscale: config.Sink.Headscale,
 	}
 }
 
@@ -22,18 +21,18 @@ func (s *Sink) Initialize(ctx context.Context) error {
 }
 
 func (s *Sink) Process(ctx context.Context, nodes []types.Node) error {
-	records := create(nodes, s.baseDomain)
-	if s.noBaseDomain {
+	records := create(nodes, s.BaseDomain)
+	if s.NoBaseDomain {
 		records = append(records, create(nodes, "")...)
 	}
 	sorted := sort(records)
 
-	if err := write(s.filePath, sorted); err != nil {
+	if err := write(s.ExtraRecordsFile, sorted); err != nil {
 		log.Printf("error writing JSON: %v", err)
 		return err
 	}
 
-	log.Printf("Wrote %d DNS records to %s", len(sorted), s.filePath)
+	log.Printf("Wrote %d DNS records to %s", len(sorted), s.ExtraRecordsFile)
 	return nil
 }
 

@@ -23,7 +23,7 @@ func (s *Sink) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	s.mu.RUnlock()
 
 	for _, question := range r.Question {
-		ip, found := questionToNodeIP(question.Name, s.baseDomain, s.noBaseDomain, nodes)
+		ip, found := questionToNodeIP(question.Name, s.BaseDomain, s.NoBaseDomain, nodes)
 		if !found {
 			continue
 		}
@@ -67,18 +67,18 @@ func (s *Sink) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	}
 }
 
-func questionToNodeIP(questionName string, baseDomain string, noBaseDomain bool, nodes []types.Node) (types.NodeIP, bool) {
+func questionToNodeIP(questionName string, BaseDomain string, NoBaseDomain bool, nodes []types.Node) (types.NodeIP, bool) {
 	questionName = strings.ToLower(strings.TrimSuffix(questionName, "."))
-	baseDomain = strings.ToLower(strings.TrimSuffix(baseDomain, "."))
+	BaseDomain = strings.ToLower(strings.TrimSuffix(BaseDomain, "."))
 
 	// First pass, exact match
 	for _, node := range nodes {
 		nodeName := strings.ToLower(node.Hostname)
-		if noBaseDomain && nodeName == questionName {
+		if NoBaseDomain && nodeName == questionName {
 			return node.IP, true
 		}
-		if baseDomain != "" {
-			fqdn := nodeName + "." + baseDomain
+		if BaseDomain != "" {
+			fqdn := nodeName + "." + BaseDomain
 			if fqdn == questionName {
 				return node.IP, true
 			}
@@ -88,13 +88,13 @@ func questionToNodeIP(questionName string, baseDomain string, noBaseDomain bool,
 	// Second pass, wildcard check
 	for _, node := range nodes {
 		nodeName := strings.ToLower(node.Hostname)
-		if baseDomain != "" {
-			fqdn := nodeName + "." + baseDomain
+		if BaseDomain != "" {
+			fqdn := nodeName + "." + BaseDomain
 			if dns.IsSubDomain(fqdn+".", questionName+".") && questionName != fqdn {
 				return node.IP, true
 			}
 		}
-		if noBaseDomain {
+		if NoBaseDomain {
 			if dns.IsSubDomain(nodeName+".", questionName+".") && questionName != nodeName {
 				return node.IP, true
 			}

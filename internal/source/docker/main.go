@@ -14,10 +14,8 @@ import (
 
 func New(config config.Config) *Source {
 	return &Source{
-		dockerHost:    config.Source.Docker.Host,
-		dockerContext: config.Source.Docker.Context,
-		labelKey:      config.Source.Docker.LabelKey,
-		node:          config.Node,
+		Common: config.Common,
+		Docker: config.Source.Docker,
 	}
 }
 
@@ -38,13 +36,13 @@ func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
 		return nil, err
 	}
 
-	labeled, err := GetLabelled(containers, s.labelKey)
+	labeled, err := GetLabelled(containers, s.LabelKey)
 	if err != nil {
 		log.Printf("error filtering labeled containers: %v", err)
 		return nil, err
 	}
 
-	subdomains, err := GetLabels(labeled, s.labelKey)
+	subdomains, err := GetLabels(labeled, s.LabelKey)
 	if err != nil {
 		log.Printf("error retrieving labels: %v", err)
 		return nil, err
@@ -62,7 +60,7 @@ func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
 	}
 
 	for _, subdomain := range trimmedSubdomains {
-		nodes = append(nodes, types.Node{Hostname: subdomain + "." + s.node.Hostname, IP: s.node.IP})
+		nodes = append(nodes, types.Node{Hostname: subdomain + "." + s.Node.Hostname, IP: s.Node.IP})
 	}
 
 	return nodes, nil
@@ -111,7 +109,7 @@ func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) 
 			case event := <-eventsChan:
 				// Check if container has our label
 				if event.Actor.Attributes != nil {
-					if _, hasLabel := event.Actor.Attributes[s.labelKey]; hasLabel {
+					if _, hasLabel := event.Actor.Attributes[s.LabelKey]; hasLabel {
 						log.Printf("Container event detected: %s - %s", event.Action, event.Actor.Attributes["name"])
 
 						// Fetch updated nodes

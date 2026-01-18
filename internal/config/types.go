@@ -9,18 +9,18 @@ import (
 )
 
 type Config struct {
-	// Common
-	NoBaseDomain   bool
-	BaseDomain     string
-	Wildcard       bool
-	Refresh        time.Duration
-	StateDir       string
-	TailscaleServe bool
-	TSNet          *TSNet
-	Node           types.Node
-
+	*Common
+	TSNet  *TSNet
 	Source Source
 	Sink   Sink
+}
+
+type Common struct {
+	NoBaseDomain bool
+	BaseDomain   string
+	Wildcard     bool
+	Refresh      time.Duration
+	StateDir     string
 }
 
 type Source struct {
@@ -31,6 +31,7 @@ type Source struct {
 type (
 	Docker struct {
 		Host     string
+		Node     types.Node
 		Context  string
 		LabelKey string
 	}
@@ -42,9 +43,10 @@ type (
 )
 
 type Sink struct {
-	Headscale *Headscale
-	Hosts     *Hosts
-	DNS       *DNS
+	TailscaleServe bool
+	Headscale      *Headscale
+	Hosts          *Hosts
+	DNS            *DNS
 }
 
 type (
