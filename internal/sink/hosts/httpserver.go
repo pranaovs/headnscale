@@ -15,8 +15,7 @@ func startHTTP(ln net.Listener, filePath string) *http.Server {
 		http.ServeFile(w, r, filePath)
 	}
 
-	mux.HandleFunc("/hosts", handler)
-	mux.HandleFunc("/hosts.txt", handler)
+	mux.HandleFunc("/", handler)
 
 	// Create Server
 	srv := &http.Server{
