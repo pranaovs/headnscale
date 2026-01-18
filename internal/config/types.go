@@ -9,33 +9,36 @@ import (
 )
 
 type Config struct {
-	*Common
-	TSNet  *TSNet
+	Common
+	TSNet  TSNet
 	Source Source
 	Sink   Sink
 }
 
 type Common struct {
-	NoBaseDomain bool
-	BaseDomain   string
-	Wildcard     bool
-	Refresh      time.Duration
-	StateDir     string
+	NoBaseDomain   bool
+	BaseDomain     string
+	Wildcard       bool
+	Refresh        time.Duration
+	StateDir       string
+	TailscaleServe bool
 }
 
 type Source struct {
-	Docker    *Docker
-	Tailscale *Tailscale
+	Docker    Docker
+	Tailscale Tailscale
 }
 
 type (
 	Docker struct {
+		Enabled  bool
 		Host     string
 		Node     types.Node
 		Context  string
 		LabelKey string
 	}
 	Tailscale struct {
+		Enabled     bool
 		LoginServer string
 		AuthKey     string
 		Hostname    string
@@ -43,24 +46,26 @@ type (
 )
 
 type Sink struct {
-	TailscaleServe bool
-	Headscale      *Headscale
-	Hosts          *Hosts
-	DNS            *DNS
+	Headscale Headscale
+	Hosts     Hosts
+	DNS       DNS
 }
 
 type (
 	Headscale struct {
+		Enabled          bool
 		ExtraRecordsFile string
 	}
 	Hosts struct {
-		Path   string
-		Port   int
-		TSPort int
+		Enabled bool
+		Path    string
+		Port    int
+		TSPort  int
 	}
 	DNS struct {
-		Port   int
-		TSPort int
+		Enabled bool
+		Port    int
+		TSPort  int
 	}
 )
 
@@ -68,6 +73,7 @@ type (
 type TSNet struct {
 	Srv *tsnet.Server
 	Cli *local.Client
+	types.Node
 }
 
 // GetServer returns the tsnet server if available, or nil

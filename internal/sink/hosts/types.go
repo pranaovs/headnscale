@@ -8,8 +8,11 @@ import (
 )
 
 type Sink struct {
-	*config.Common
-	*config.Hosts
+	config.Common
+	config.Hosts
+
+	// Tailscale State
+	tsNet *config.TSNet
 
 	// Runtime state
 	ips     []net.IP

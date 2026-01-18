@@ -18,12 +18,12 @@ func NodesEqual(a, b []types.Node) bool {
 	}
 
 	// Build a map of hostname -> list of IPs to handle duplicate hostnames
-	indexA := make(map[string][]types.NodeIP, len(a))
+	indexA := make(map[string][]types.IP, len(a))
 	for _, n := range a {
 		indexA[n.Hostname] = append(indexA[n.Hostname], n.IP)
 	}
 
-	indexB := make(map[string][]types.NodeIP, len(b))
+	indexB := make(map[string][]types.IP, len(b))
 	for _, n := range b {
 		indexB[n.Hostname] = append(indexB[n.Hostname], n.IP)
 	}
@@ -58,7 +58,7 @@ func NodesEqual(a, b []types.Node) bool {
 }
 
 // equalNodeIP efficiently compares two NodeIP structs
-func equalNodeIP(a, b types.NodeIP) bool {
+func equalNodeIP(a, b types.IP) bool {
 	// Compare IPv4
 	if !equalIP(a.IPv4, b.IPv4) {
 		return false

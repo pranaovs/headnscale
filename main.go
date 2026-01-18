@@ -26,8 +26,7 @@ func main() {
 	defer cancel()
 
 	// Create Tailscale server if enabled
-	if cfg.Source.Tailscale != nil || cfg.Sink.TailscaleServe {
-		cfg.TSNet = &config.TSNet{}
+	if cfg.Source.Tailscale.Enabled || cfg.TailscaleServe {
 		cfg.TSNet.Srv = &tsnet.Server{
 			Hostname:   cfg.Source.Tailscale.Hostname,
 			AuthKey:    cfg.Source.Tailscale.AuthKey,
@@ -55,27 +54,43 @@ func main() {
 			log.Fatalf("Failed to create Tailscale local client: %v", err)
 		}
 
-		log.Printf("Tailscale server started (source: %t, serve: %t)", cfg.Source.Tailscale != nil, cfg.Sink.TailscaleServe)
+		status, err := cfg.TSNet.Cli.Status(ctx)
+		cfg.TSNet.Hostname = tailscale.HostNameFromDNSName(status.Self.DNSName)
+		if err != nil {
+			log.Fatalf("Failed to get Tailscale status: %v", err)
+		}
+
+		for _, ip := range status.TailscaleIPs {
+			if ip.Is4() {
+				// ip.AsSlice() returns []byte, which is compatible with net.IP
+				cfg.TSNet.IPv4 = ip.AsSlice()
+			} else if ip.Is6() {
+				cfg.TSNet.IPv6 = ip.AsSlice()
+			} else {
+				log.Printf("Unknown IP type: %s", ip.String())
+			}
+		}
+		log.Printf("Tailscale server started (source: %t, serve: %t)", cfg.Source.Tailscale.Enabled, cfg.TailscaleServe)
 	}
 
 	// Initialize sources based on config
 	var sources []types.Source
-	if cfg.Source.Docker != nil {
+	if cfg.Source.Docker.Enabled {
 		sources = append(sources, docker.New(cfg))
 	}
-	if cfg.Source.Tailscale != nil {
+	if cfg.Source.Tailscale.Enabled {
 		sources = append(sources, tailscale.New(cfg))
 	}
 
 	// Initialize sinks based on config
 	var sinks []types.Sink
-	if cfg.Sink.Hosts != nil {
+	if cfg.Sink.Hosts.Enabled {
 		sinks = append(sinks, hosts.New(cfg))
 	}
-	if cfg.Sink.Headscale != nil {
+	if cfg.Sink.Headscale.Enabled {
 		sinks = append(sinks, headscale.New(cfg))
 	}
-	if cfg.Sink.DNS != nil {
+	if cfg.Sink.DNS.Enabled {
 		sinks = append(sinks, dns.New(cfg))
 	}
 	// Setup and start all modules
@@ -218,23 +233,23 @@ func logStartup(cfg config.Config) {
 	log.Printf(" - State Directory: %s", cfg.StateDir)
 
 	// Docker Source
-	dockerEnabled := cfg.Source.Docker != nil
+	dockerEnabled := cfg.Source.Docker.Enabled
 	log.Printf(" - Docker Source: %t", dockerEnabled)
 	if dockerEnabled {
 		log.Printf("   - Label Key: %s", cfg.Source.Docker.LabelKey)
 		log.Printf("   - Docker Host: %s", cfg.Source.Docker.Host)
 		// Node info is primarily used by Docker source
 		log.Printf("   - Node Hostname: %s", cfg.Source.Docker.Node.Hostname)
-		log.Printf("   - Node IPv4: %s", cfg.Source.Docker.Node.IP.IPv4.String())
-		if cfg.Source.Docker.Node.IP.IPv6 != nil {
-			log.Printf("   - Node IPv6: %s", cfg.Source.Docker.Node.IP.IPv6.String())
+		log.Printf("   - Node IPv4: %s", cfg.Source.Docker.Node.IPv4.String())
+		if cfg.Source.Docker.Node.IPv6 != nil {
+			log.Printf("   - Node IPv6: %s", cfg.Source.Docker.Node.IPv6.String())
 		}
 	}
 
 	// Tailscale Source & Serve
-	tsEnabled := cfg.Source.Tailscale != nil
+	tsEnabled := cfg.Source.Tailscale.Enabled
 	log.Printf(" - Tailscale Source: %t", tsEnabled)
-	log.Printf(" - Tailscale Serve: %t", cfg.Sink.TailscaleServe)
+	log.Printf(" - Tailscale Serve: %t", cfg.TailscaleServe)
 
 	if tsEnabled {
 		log.Printf("   - Tailscale Hostname: %s", cfg.Source.Tailscale.Hostname)
@@ -244,18 +259,18 @@ func logStartup(cfg config.Config) {
 	}
 
 	// Sinks
-	if cfg.Sink.Hosts != nil {
+	if cfg.Sink.Hosts.Enabled {
 		log.Printf(" - Hosts File Sink: Enabled")
 		log.Printf("   - Path: %s", cfg.Sink.Hosts.Path)
 		log.Printf("   - HTTP Port: %d", cfg.Sink.Hosts.Port)
 	}
 
-	if cfg.Sink.Headscale != nil {
+	if cfg.Sink.Headscale.Enabled {
 		log.Printf(" - Headscale Sink: Enabled")
 		log.Printf("   - Path: %s", cfg.Sink.Headscale.ExtraRecordsFile)
 	}
 
-	if cfg.Sink.DNS != nil {
+	if cfg.Sink.DNS.Enabled {
 		log.Printf(" - DNS Sink: Enabled")
 		log.Printf("   - UDP Port: %d", cfg.Sink.DNS.Port)
 	}

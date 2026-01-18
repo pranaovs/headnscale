@@ -55,7 +55,7 @@ func (s *Sink) Initialize(ctx context.Context) error {
 
 		for _, ip := range status.TailscaleIPs {
 			// Construct specific address (e.g., "100.100.100.100:53")
-			addr := net.JoinHostPort(ip.String(), strconv.Itoa(s.dnsPort))
+			addr := net.JoinHostPort(ip.String(), strconv.Itoa(s.Port))
 
 			// tsnet requires the specific IP address to be passed to ListenPacket
 			pc, err := s.tsServer.ListenPacket("udp", addr)

@@ -12,8 +12,8 @@ import (
 )
 
 type Sink struct {
-	*config.Common
-	*config.DNS
+	config.Common
+	config.DNS
 
 	// Runtime state
 	localIPs  []net.IP

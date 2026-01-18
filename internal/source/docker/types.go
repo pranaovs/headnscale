@@ -6,7 +6,7 @@ import (
 )
 
 type Source struct {
-	*config.Common
-	*config.Docker
+	config.Common
+	config.Docker
 	cli sdkclient.SDKClient
 }
