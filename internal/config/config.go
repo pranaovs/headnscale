@@ -18,16 +18,17 @@ func Load() Config {
 		Node: types.Node{
 			Hostname: GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
 		},
-		StateDir: GetEnv("HEADNSCALE_STATE_DIR", "/var/lib/headnscale"),
+		StateDir:       GetEnv("HEADNSCALE_STATE_DIR", "/var/lib/headnscale"),
+		TailscaleServe: GetEnv("HEADNSCALE_TS_SERVE", "false") == "true",
 
 		// Docker source config
-		DockerEnabled: GetEnv("HEADNSCALE_DOCKER_ENABLED", "") != "",
+		DockerEnabled: GetEnv("HEADNSCALE_DOCKER_ENABLED", "false") == "true",
 		DockerHost:    GetEnv("DOCKER_HOST", "unix:///var/run/docker.sock"),
 		DockerContext: GetEnv("DOCKER_CONTEXT", ""),
 		LabelKey:      GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
 
 		// Tailscale source config
-		TailscaleEnabled:     GetEnv("HEADNSCALE_TS_ENABLED", "") != "",
+		TailscaleEnabled:     GetEnv("HEADNSCALE_TS_ENABLED", "false") == "true",
 		TailscaleLoginServer: GetEnv("HEADNSCALE_TS_LOGIN_SERVER", ""),
 		TailscaleAuthKey:     GetEnv("TS_AUTHKEY", ""),
 		TailscaleHostname:    GetEnv("HEADNSCALE_TS_HOSTNAME", "headnscale"),

@@ -15,6 +15,7 @@ import (
 	"github.com/pranaovs/headnscale/internal/source/docker"
 	"github.com/pranaovs/headnscale/internal/source/tailscale"
 	"github.com/pranaovs/headnscale/internal/types"
+	"tailscale.com/tsnet"
 )
 
 func main() {
@@ -23,6 +24,36 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// Create Tailscale server if enabled
+	if cfg.TailscaleEnabled || cfg.TailscaleServe {
+		cfg.TSNet.Srv = &tsnet.Server{
+			Hostname:   cfg.TailscaleHostname,
+			AuthKey:    cfg.TailscaleAuthKey,
+			ControlURL: cfg.TailscaleLoginServer,
+			Dir:        cfg.StateDir + "/" + cfg.TailscaleHostname,
+		}
+
+		var err error
+
+		// Start Tailscale server
+		if _, err = cfg.TSNet.Srv.Up(ctx); err != nil {
+			log.Fatalf("Failed to start Tailscale server: %v", err)
+		}
+
+		// Cleanup Tailscale server on exit
+		defer func() {
+			if err := cfg.TSNet.Srv.Close(); err != nil {
+				log.Printf("Failed to close Tailscale server: %v", err)
+			}
+		}()
+
+		// Save local client for later use
+		cfg.TSNet.Cli, err = cfg.TSNet.Srv.LocalClient()
+		if err != nil {
+			log.Fatalf("Failed to create Tailscale local client: %v", err)
+		}
+	}
 
 	// Initialize sources based on config
 	var sources []types.Source
