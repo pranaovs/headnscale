@@ -140,9 +140,11 @@ func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) 
 }
 
 func (s *Source) Close(ctx context.Context) error {
-	err := s.watcher.Close()
-	if err != nil {
-		return err
+	if s.watcher != nil {
+		err := s.watcher.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
