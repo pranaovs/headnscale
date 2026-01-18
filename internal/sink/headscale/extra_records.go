@@ -10,9 +10,7 @@ import (
 
 // Ref: https://github.com/juanfont/headscale/blob/main/docs/ref/dns.md
 func create(nodes []types.Node, baseDomain string) []map[string]any {
-	if baseDomain == "" {
-		baseDomain = ""
-	} else {
+	if baseDomain != "" {
 		baseDomain = "." + baseDomain
 	}
 
