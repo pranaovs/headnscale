@@ -22,17 +22,17 @@ func create(nodes []types.Node, baseDomain string) []map[string]any {
 		subdomain := node.Hostname
 
 		// Create A record for IPv4
-		if node.IP.IPv4 != nil {
+		if node.IPv4 != nil {
 			record := map[string]any{
 				"name":  subdomain + baseDomain,
 				"type":  "A",
-				"value": node.IP.IPv4.String(),
+				"value": node.IPv4.String(),
 			}
 			records = append(records, record)
 		}
 
 		// Create AAAA record for IPv6 if available
-		if node.IP.IPv6 != nil {
+		if node.IPv6 != nil {
 			record := map[string]any{
 				"name":  subdomain + baseDomain,
 				"type":  "AAAA",
@@ -50,8 +50,14 @@ func sort(records []map[string]any) []map[string]any {
 	// "Be sure to "sort keys" and produce a stable output in case you generate the JSON file with a script.
 	// Headscale uses a checksum to detect changes to the file and a stable output avoids unnecessary processing."
 	libsort.Slice(records, func(i, j int) bool {
-		nameI := records[i]["name"].(string)
-		nameJ := records[j]["name"].(string)
+		nameI, ok := records[i]["name"].(string)
+		if !ok {
+			return false
+		}
+		nameJ, ok := records[j]["name"].(string)
+		if !ok {
+			return false
+		}
 
 		if nameI != nameJ {
 			return nameI < nameJ
