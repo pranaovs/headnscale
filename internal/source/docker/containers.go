@@ -12,7 +12,7 @@ import (
 func GetRunning(ctx context.Context, cli sdkclient.SDKClient) ([]container.Summary, error) {
 	containers, err := cli.ContainerList(ctx, container.ListOptions{All: true})
 	if err != nil {
-		log.Fatalf("Error listing containers: %v", err)
+		log.Printf("Error listing containers: %v", err)
 		return nil, err
 	}
 
