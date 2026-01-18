@@ -139,7 +139,7 @@ func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) 
 	return nodesChan, errChan
 }
 
-func (s *Source) Close() error {
+func (s *Source) Close(ctx context.Context) error {
 	err := s.watcher.Close()
 	if err != nil {
 		return err

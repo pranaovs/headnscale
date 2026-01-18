@@ -91,17 +91,18 @@ func (s *Sink) Process(ctx context.Context, nodes []types.Node) error {
 	return nil
 }
 
-func (s *Sink) Close() error {
+func (s *Sink) Close(ctx context.Context) error {
+	// Note: DNS server Shutdown() doesn't accept context parameter
 	// Close all local servers
 	for _, srv := range s.localSrvs {
-		if err := srv.Shutdown(); err != nil {
+		if err := srv.ShutdownContext(ctx); err != nil {
 			log.Printf("Error shutting down local DNS: %v", err)
 		}
 	}
 
 	// Close all Tailscale servers
 	for _, tsSrv := range s.tsSrvs {
-		if err := tsSrv.Shutdown(); err != nil {
+		if err := tsSrv.ShutdownContext(ctx); err != nil {
 			log.Printf("Error shutting down Tailscale DNS: %v", err)
 		}
 	}

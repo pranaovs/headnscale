@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/pranaovs/headnscale/internal/config"
 	"github.com/pranaovs/headnscale/internal/sink/dns"
@@ -97,7 +98,12 @@ func main() {
 	if err := initializeModules(ctx, sources, sinks); err != nil {
 		log.Fatalf("Failed to initialize modules: %v", err)
 	}
-	defer closeModules(sources, sinks)
+	defer func() {
+		// Create a new context with timeout for cleanup since main context will be cancelled
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cleanupCancel()
+		closeModules(cleanupCtx, sources, sinks)
+	}()
 
 	// Start watching for changes
 	go watchSources(ctx, sources, sinks)
@@ -133,6 +139,12 @@ func watchSources(ctx context.Context, sources []types.Source, sinks []types.Sin
 
 	// Helper to merge all source states and write to sinks
 	writeToSinks := func() {
+		// Check if context is cancelled before processing
+		if ctx.Err() != nil {
+			log.Printf("Context cancelled, skipping sink writes")
+			return
+		}
+
 		var allNodes []types.Node
 		for _, nodes := range sourceState {
 			allNodes = append(allNodes, nodes...)
@@ -141,6 +153,11 @@ func watchSources(ctx context.Context, sources []types.Source, sinks []types.Sin
 		log.Printf("Writing merged update: %d total nodes", len(allNodes))
 
 		for _, sink := range sinks {
+			// Check context before each sink write
+			if ctx.Err() != nil {
+				log.Printf("Context cancelled, stopping sink writes")
+				return
+			}
 			if err := sink.Process(ctx, allNodes); err != nil {
 				log.Printf("Error writing to sink: %v", err)
 			}
@@ -204,15 +221,15 @@ func processOnce(ctx context.Context, sources []types.Source, sinks []types.Sink
 	return nil
 }
 
-func closeModules(sources []types.Source, sinks []types.Sink) {
+func closeModules(ctx context.Context, sources []types.Source, sinks []types.Sink) {
 	for _, source := range sources {
-		if err := source.Close(); err != nil {
+		if err := source.Close(ctx); err != nil {
 			log.Printf("Error closing source: %v", err)
 		}
 	}
 
 	for _, sink := range sinks {
-		if err := sink.Close(); err != nil {
+		if err := sink.Close(ctx); err != nil {
 			log.Printf("Error closing sink: %v", err)
 		}
 	}

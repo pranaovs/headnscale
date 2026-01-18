@@ -141,7 +141,7 @@ func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) 
 	return nodesChan, errChan
 }
 
-func (s *Source) Close() error {
+func (s *Source) Close(ctx context.Context) error {
 	if s.cli != nil {
 		if err := s.cli.Close(); err != nil {
 			log.Printf("error closing Docker client: %v", err)

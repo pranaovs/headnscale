@@ -36,6 +36,6 @@ func (s *Sink) Process(ctx context.Context, nodes []types.Node) error {
 	return nil
 }
 
-func (s *Sink) Close() error {
+func (s *Sink) Close(ctx context.Context) error {
 	return nil
 }

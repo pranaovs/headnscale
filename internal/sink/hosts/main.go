@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"time"
 
 	"github.com/pranaovs/headnscale/internal/config"
 	"github.com/pranaovs/headnscale/internal/types"
@@ -90,13 +89,12 @@ func (s *Sink) Process(ctx context.Context, nodes []types.Node) error {
 	return nil
 }
 
-func (s *Sink) Close() error {
+func (s *Sink) Close(ctx context.Context) error {
+	// Use the provided context for graceful shutdown
 	for _, srv := range s.servers {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		if err := srv.Shutdown(ctx); err != nil {
 			log.Printf("Error stopping HTTP server: %v", err)
 		}
-		cancel()
 	}
 	return nil
 }
