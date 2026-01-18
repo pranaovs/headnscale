@@ -11,11 +11,11 @@ import (
 
 func New(config config.Config) *Sink {
 	return &Sink{
-		filePath:     config.HostsFile,
+		filePath:     config.Sink.Hosts.Path,
 		noBaseDomain: config.NoBaseDomain,
 		baseDomain:   config.BaseDomain,
 		httpIP:       net.IPv4(0, 0, 0, 0),
-		httpPort:     config.Port,
+		httpPort:     config.Sink.Hosts.Port,
 	}
 }
 

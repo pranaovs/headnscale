@@ -14,8 +14,8 @@ import (
 
 func New(config config.Config) *Source {
 	return &Source{
-		dockerHost: config.DockerHost,
-		labelKey:   config.LabelKey,
+		dockerHost: config.Source.Docker.Host,
+		labelKey:   config.Source.Docker.LabelKey,
 		node:       config.Node,
 	}
 }

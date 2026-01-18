@@ -30,18 +30,20 @@ All sources and sinks are optional and enabled via environment variables.
 |----------|----------|---------|-------------|
 | `HEADNSCALE_BASE_DOMAIN` | No | `ts.net` | Base domain for DNS records |
 | `HEADNSCALE_NO_BASE_DOMAIN` | No | `false` | Create additional records without base domain |
-| `HEADNSCALE_REFRESH_SECONDS` | No | `60` | How often to scan for changes |
-| `HEADNSCALE_PORT` | No | `8080` | Port for internal HTTP server (health checks, hosts.txt) |
+| `HEADNSCALE_REFRESH_SECONDS` | No | `60` | How often to scan for changes (for non-callback based sources) |
 | `HEADNSCALE_WILDCARD` | No | `false` | Create wildcard DNS records for subdomains |
 | `HEADNSCALE_STATE_DIR` | No | `/var/lib/headnscale` | Persistent state directory |
+| `HEADNSCALE_TS_SERVE` | No | - | Set to `true` to serve HTTP and DNS over Tailscale network ([Configuration](#tailscale-source)) |
 
-#### Docker Source
+#### Sources
 
-Set `HEADNSCALE_DOCKER_ENABLED` to enable.
+##### Docker Source
+
+Set `HEADNSCALE_DOCKER_ENABLED` to `true` to enable.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `HEADNSCALE_DOCKER_ENABLED` | No | - | Set to any value to enable Docker source |
+| `HEADNSCALE_DOCKER_ENABLED` | No | `false` | Set to `true` to enable Docker source |
 | `HEADNSCALE_LABEL_KEY` | No | `headnscale.subdomain` | Docker label key to look for |
 | `HEADNSCALE_NODE_HOSTNAME` | Yes | - | Hostname of the node running the containers |
 | `HEADNSCALE_NODE_IP` | Yes | - | IPv4 address of the node |
@@ -49,28 +51,56 @@ Set `HEADNSCALE_DOCKER_ENABLED` to enable.
 | `DOCKER_HOST` | No | `unix:///var/run/docker.sock` | Docker host socket path |
 | `DOCKER_CONTEXT` | No | - | Docker context to use |
 
-#### Tailscale Source
+##### Tailscale Source
 
-Set `HEADNSCALE_TS_ENABLED` to enable.
+Set `HEADNSCALE_TS_ENABLED` to `true` to enable.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `HEADNSCALE_TS_ENABLED` | No | - | Set to any value to enable Tailscale source |
+| `HEADNSCALE_TS_ENABLED` | No | `false` | Set to `true` to enable Tailscale source (read peers from tailnet) |
 | `TS_AUTHKEY` | No | - | Tailscale auth key |
 | `HEADNSCALE_TS_LOGIN_SERVER` | No | - | Tailscale/Headscale login server URL |
 | `HEADNSCALE_TS_HOSTNAME` | No | `headnscale` | Hostname for this instance on the Tailscale network |
 
-#### Sinks (at least one required)
+
+#### Sinks
+
+##### Headscale `extra_records.json` Sink
+
+Set `HEADNSCALE_JSON_ENABLED` to `true` to enable.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `HEADNSCALE_JSON_PATH` | No | - | Path to write the extra_records.json file (enables Headscale sink) |
-| `HEADNSCALE_HOSTS_PATH` | No | - | Path to write the hosts file (enables Hosts sink) |
-| `HEADNSCALE_DNS_PORT` | No | - | DNS port for serving DNS queries (enabled DNS sink) |
+| `HEADSCALE_JSON_ENABLED` | No | - | Set to `true` to enable Headscale sink |
+| `HEADNSCALE_JSON_PATH` | Yes | - | Path to write the extra_records.json file |
+
+
+##### Hosts File Sink
+
+Set `HEADNSCALE_HOSTS_ENABLED` to `true` to enable.
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `HEADSCALE_HOSTS_ENABLED` | No | `false` | Set to `true` to enable Hosts sink |
+| `HEADNSCALE_HOSTS_PATH` | Yes | - | Path to write the hosts file |
+| `HEADNSCALE_HOSTS_PORT` | No | `0` | Port to serve hosts file under `/hosts` and `/hosts.txt` (`0` to disable) |
+| `HEADNSCALE_HOSTS_TS_PORT` | No | `HEADNSCALE_HOSTS_PORT` | Port on tailnet to serve hosts file under `/hosts` and `/hosts.txt` (`0` to disable) |
+
+
+##### DNS Sink
+
+Set `HEADNSCALE_DNS_ENABLED` to `true` to enable.
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `HEADNSCALE_DNS_ENABLED` | No | `false` | Set to `true` to enable DNS sink |
+| `HEADNSCALE_DNS_PORT` | No | `0` | DNS port for serving DNS queries  |
+| `HEADNSCALE_DNS_TS_PORT` | No | `HEADNSCALE_DNS_PORT` | DNS port on tailnet for serving DNS queries (`0` to disable) |
+
 
 ### Deployment
 
-#### Both Sources
+#### Both Sources and Tailscale Serving
 
 ```yaml
 services:
@@ -90,13 +120,16 @@ services:
       - HEADNSCALE_NODE_HOSTNAME=<Tailscale Hostname>
       - HEADNSCALE_NODE_IP=<Tailscale IPv4>
       - HEADNSCALE_NODE_IP6=<Tailscale IPv6>
-      # Tailscale source
+      # Tailscale source (read peers from tailnet)
       - HEADNSCALE_TS_ENABLED=true
+      # Tailscale serve (serve HTTP/DNS over tailnet)
+      - HEADNSCALE_TS_SERVE=true
       - TS_AUTHKEY=<your-auth-key>
       - HEADNSCALE_TS_LOGIN_SERVER=https://headscale.example.com
       # Sinks
       - HEADNSCALE_JSON_PATH=/data/extra_records.json
       - HEADNSCALE_HOSTS_PATH=/data/hosts.txt
+      - HEADNSCALE_DNS_PORT=53
       # Common
       - HEADNSCALE_BASE_DOMAIN=ts.net
       - HEADNSCALE_NO_BASE_DOMAIN=true
@@ -121,7 +154,11 @@ A DNS record will be created for `myapp.your-node-hostname.ts.net` -> `HEADNSCAL
 
 #### Tailscale Source
 
-All peers on your Tailscale/Headscale network will automatically have DNS records created based on their hostname and IP addresses.
+All peers on your Tailscale/Headscale network will automatically have DNS records created based on their hostname and IP addresses when `HEADNSCALE_TS_ENABLED=true`.
+
+#### Tailscale Serving
+
+When `HEADNSCALE_TS_SERVE=true`, the HTTP and DNS servers (if enabled) will also be accessible over your Tailscale network. This allows you to access the services from any device on your tailnet without exposing them to the internet.
 
 ## Building from Source
 

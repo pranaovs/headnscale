@@ -11,11 +11,16 @@ import (
 
 func New(config config.Config) *Source {
 	return &Source{
-		cli: config.TSNet.Cli,
+		cli: config.TSNet.GetClient(),
 	}
 }
 
 func (s *Source) Initialize(ctx context.Context) error {
+	if s.cli == nil {
+		log.Printf("Tailscale client not available")
+		return nil
+	}
+
 	var err error
 	s.watcher, err = s.cli.WatchIPNBus(ctx, 0)
 	if err != nil {
@@ -28,6 +33,10 @@ func (s *Source) Initialize(ctx context.Context) error {
 }
 
 func (s *Source) Fetch(ctx context.Context) ([]types.Node, error) {
+	if s.cli == nil {
+		return []types.Node{}, nil
+	}
+
 	status, err := s.cli.Status(ctx)
 	if err != nil {
 		log.Printf("Failed to get Tailscale status: %v", err)
@@ -61,6 +70,10 @@ func (s *Source) Watch(ctx context.Context) (<-chan []types.Node, <-chan error) 
 	go func() {
 		defer close(nodesChan)
 		defer close(errChan)
+
+		if s.cli == nil {
+			return
+		}
 
 		var previousNodes []types.Node
 

@@ -3,86 +3,99 @@ package config
 import (
 	"log"
 	"net"
-	"strconv"
 
 	"github.com/pranaovs/headnscale/internal/types"
-	"github.com/pranaovs/headnscale/internal/utils"
 )
 
 func Load() Config {
 	cfg := Config{
-		// Common config
-		NoBaseDomain: GetEnv("HEADNSCALE_NO_BASE_DOMAIN", "false") == "true",
-		BaseDomain:   GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
-		Wildcard:     GetEnv("HEADNSCALE_WILDCARD", "false") == "true",
-		Node: types.Node{
-			Hostname: GetEnv("HEADNSCALE_NODE_HOSTNAME", ""),
-		},
+		// Common Configuration
+		BaseDomain:     GetEnv("HEADNSCALE_BASE_DOMAIN", "ts.net"),
+		NoBaseDomain:   GetEnvBool("HEADNSCALE_NO_BASE_DOMAIN", false),
+		Wildcard:       GetEnvBool("HEADNSCALE_WILDCARD", false),
+		Refresh:        GetEnvDuration("HEADNSCALE_REFRESH_SECONDS", 60),
 		StateDir:       GetEnv("HEADNSCALE_STATE_DIR", "/var/lib/headnscale"),
-		TailscaleServe: GetEnv("HEADNSCALE_TS_SERVE", "false") == "true",
-
-		// Docker source config
-		DockerEnabled: GetEnv("HEADNSCALE_DOCKER_ENABLED", "false") == "true",
-		DockerHost:    GetEnv("DOCKER_HOST", "unix:///var/run/docker.sock"),
-		DockerContext: GetEnv("DOCKER_CONTEXT", ""),
-		LabelKey:      GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
-
-		// Tailscale source config
-		TailscaleEnabled:     GetEnv("HEADNSCALE_TS_ENABLED", "false") == "true",
-		TailscaleLoginServer: GetEnv("HEADNSCALE_TS_LOGIN_SERVER", ""),
-		TailscaleAuthKey:     GetEnv("TS_AUTHKEY", ""),
-		TailscaleHostname:    GetEnv("HEADNSCALE_TS_HOSTNAME", "headnscale"),
-
-		// Sink config
-		ExtraRecordsFile: GetEnv("HEADNSCALE_JSON_PATH", ""),
-		HostsFile:        GetEnv("HEADNSCALE_HOSTS_PATH", ""),
+		TailscaleServe: GetEnvBool("HEADNSCALE_TS_SERVE", false),
 	}
 
-	// Parse refresh duration
-	refreshDuration, err := utils.GetDuration(GetEnv("HEADNSCALE_REFRESH_SECONDS", "60"))
-	if err != nil {
-		log.Fatal("Invalid HEADNSCALE_REFRESH_SECONDS value")
-	}
-	cfg.Refresh = refreshDuration
+	// ==========================================
+	// SOURCES
+	// ==========================================
 
-	// Parse HTTP port
-	port, err := strconv.Atoi(GetEnv("HEADNSCALE_PORT", "8080"))
-	if err != nil || port <= 0 || port > 65535 {
-		log.Fatal("Invalid HEADNSCALE_PORT value")
-	}
-	cfg.Port = port
-
-	// Parse node IPs (required only if Docker source is enabled)
-	if cfg.DockerEnabled {
-		ip4 := GetEnv("HEADNSCALE_NODE_IP", "")
-		if ip4 == "" {
-			log.Fatal("HEADNSCALE_NODE_IP is required when Docker source is enabled")
+	// 1. Docker Source
+	if GetEnvBool("HEADNSCALE_DOCKER_ENABLED", false) {
+		// Load Node Information (Required for Docker)
+		cfg.Node = types.Node{
+			Hostname: GetEnvRequired("HEADNSCALE_NODE_HOSTNAME"),
 		}
 
-		cfg.Node.IP.IPv4 = net.ParseIP(ip4)
-		if cfg.Node.IP.IPv4 == nil {
-			log.Fatalf("Invalid IPv4 address: %s", ip4)
+		// Validate IPv4
+		ip4Str := GetEnvRequired("HEADNSCALE_NODE_IP")
+		ip4 := net.ParseIP(ip4Str)
+		if ip4 == nil {
+			log.Fatalf("Config Error: HEADNSCALE_NODE_IP '%s' is not a valid IP address", ip4Str)
 		}
+		cfg.Node.IP.IPv4 = ip4
 
-		ip6 := GetEnv("HEADNSCALE_NODE_IP6", "")
-		if ip6 != "" {
-			cfg.Node.IP.IPv6 = net.ParseIP(ip6)
-			if cfg.Node.IP.IPv6 == nil {
-				log.Fatalf("Invalid IPv6 address: %s", ip6)
+		// Validate IPv6 (Optional)
+		if ip6Str := GetEnv("HEADNSCALE_NODE_IP6", ""); ip6Str != "" {
+			ip6 := net.ParseIP(ip6Str)
+			if ip6 == nil {
+				log.Fatalf("Config Error: HEADNSCALE_NODE_IP6 '%s' is not a valid IP address", ip6Str)
 			}
+			cfg.Node.IP.IPv6 = ip6
 		}
 
-		if cfg.Node.Hostname == "" {
-			log.Fatal("HEADNSCALE_NODE_HOSTNAME is required when Docker source is enabled")
+		// Initialize Docker Config
+		cfg.Source.Docker = &Docker{
+			Host:     GetEnv("DOCKER_HOST", "unix:///var/run/docker.sock"),
+			Context:  GetEnv("DOCKER_CONTEXT", ""),
+			LabelKey: GetEnv("HEADNSCALE_LABEL_KEY", "headnscale.subdomain"),
 		}
 	}
 
-	// Dns sink
-	dnsPort, err := strconv.Atoi(GetEnv("HEADNSCALE_DNS_PORT", "0"))
-	if err != nil || dnsPort < 0 || dnsPort > 65535 {
-		log.Fatal("Invalid HEADNSCALE_DNS_PORT value")
+	// 2. Tailscale Source
+	if GetEnvBool("HEADNSCALE_TS_ENABLED", false) {
+		cfg.Source.Tailscale = &Tailscale{
+			LoginServer: GetEnv("HEADNSCALE_TS_LOGIN_SERVER", ""),
+			AuthKey:     GetEnv("TS_AUTHKEY", ""),
+			Hostname:    GetEnv("HEADNSCALE_TS_HOSTNAME", "headnscale"),
+		}
 	}
-	cfg.DNSPort = dnsPort
+
+	// ==========================================
+	// SINKS
+	// ==========================================
+
+	// 1. Headscale JSON Sink
+	if GetEnvBool("HEADSCALE_JSON_ENABLED", false) {
+		cfg.Sink.Headscale = &Headscale{
+			ExtraRecordsFile: GetEnvRequired("HEADNSCALE_JSON_PATH"),
+		}
+	}
+
+	// 2. Hosts File Sink
+	if GetEnvBool("HEADSCALE_HOSTS_ENABLED", false) {
+		localPort := GetEnvPort("HEADNSCALE_HOSTS_PORT", 0)
+
+		cfg.Sink.Hosts = &Hosts{
+			Path: GetEnvRequired("HEADNSCALE_HOSTS_PATH"),
+			Port: localPort,
+			// Default TS port to the same as local port if not explicitly set
+			TSPort: GetEnvPort("HEADNSCALE_HOSTS_TS_PORT", localPort),
+		}
+	}
+
+	// 3. DNS Sink
+	if GetEnvBool("HEADNSCALE_DNS_ENABLED", false) {
+		localPort := GetEnvPort("HEADNSCALE_DNS_PORT", 0)
+
+		cfg.Sink.DNS = &DNS{
+			Port: localPort,
+			// Default TS port to the same as local port if not explicitly set
+			TSPort: GetEnvPort("HEADNSCALE_DNS_TS_PORT", localPort),
+		}
+	}
 
 	return cfg
 }

@@ -26,12 +26,13 @@ func main() {
 	defer cancel()
 
 	// Create Tailscale server if enabled
-	if cfg.TailscaleEnabled || cfg.TailscaleServe {
+	if cfg.Source.Tailscale != nil || cfg.TailscaleServe {
+		cfg.TSNet = &config.TSNet{}
 		cfg.TSNet.Srv = &tsnet.Server{
-			Hostname:   cfg.TailscaleHostname,
-			AuthKey:    cfg.TailscaleAuthKey,
-			ControlURL: cfg.TailscaleLoginServer,
-			Dir:        cfg.StateDir + "/" + cfg.TailscaleHostname,
+			Hostname:   cfg.Source.Tailscale.Hostname,
+			AuthKey:    cfg.Source.Tailscale.AuthKey,
+			ControlURL: cfg.Source.Tailscale.LoginServer,
+			Dir:        cfg.StateDir + "/" + cfg.Source.Tailscale.Hostname,
 		}
 
 		var err error
@@ -48,31 +49,33 @@ func main() {
 			}
 		}()
 
-		// Save local client for later use
+		// Create and save the local client
 		cfg.TSNet.Cli, err = cfg.TSNet.Srv.LocalClient()
 		if err != nil {
 			log.Fatalf("Failed to create Tailscale local client: %v", err)
 		}
+
+		log.Printf("Tailscale server started (source: %t, serve: %t)", cfg.Source.Tailscale != nil, cfg.TailscaleServe)
 	}
 
 	// Initialize sources based on config
 	var sources []types.Source
-	if cfg.DockerEnabled {
+	if cfg.Source.Docker != nil {
 		sources = append(sources, docker.New(cfg))
 	}
-	if cfg.TailscaleEnabled {
+	if cfg.Source.Tailscale != nil {
 		sources = append(sources, tailscale.New(cfg))
 	}
 
 	// Initialize sinks based on config
 	var sinks []types.Sink
-	if cfg.HostsFile != "" {
+	if cfg.Sink.Hosts != nil {
 		sinks = append(sinks, hosts.New(cfg))
 	}
-	if cfg.ExtraRecordsFile != "" {
+	if cfg.Sink.Headscale != nil {
 		sinks = append(sinks, headscale.New(cfg))
 	}
-	if cfg.DNSPort != 0 {
+	if cfg.Sink.DNS != nil {
 		sinks = append(sinks, dns.New(cfg))
 	}
 	// Setup and start all modules
@@ -207,41 +210,53 @@ func waitForShutdown() {
 	log.Println("Shutdown signal received, cleaning up...")
 }
 
-func logStartup(config config.Config) {
+func logStartup(cfg config.Config) {
 	log.Printf("Using configuration:")
-	log.Printf(" - Base Domain: %s", config.BaseDomain)
-	log.Printf(" - No Base Domain: %t", config.NoBaseDomain)
-	log.Printf(" - Refresh Interval: %s", config.Refresh)
-	log.Printf(" - HTTP Port: %d", config.Port)
-	log.Printf(" - State Directory: %s", config.StateDir)
+	log.Printf(" - Base Domain: %s", cfg.BaseDomain)
+	log.Printf(" - No Base Domain: %t", cfg.NoBaseDomain)
+	log.Printf(" - Refresh Interval: %s", cfg.Refresh)
+	log.Printf(" - State Directory: %s", cfg.StateDir)
 
-	// Sources
-	log.Printf(" - Docker Source: %t", config.DockerEnabled)
-	if config.DockerEnabled {
-		log.Printf("   - Label Key: %s", config.LabelKey)
-		log.Printf("   - Node Hostname: %s", config.Node.Hostname)
-		log.Printf("   - Node IPv4: %s", config.Node.IP.IPv4.String())
-		if config.Node.IP.IPv6 != nil {
-			log.Printf("   - Node IPv6: %s", config.Node.IP.IPv6.String())
+	// Docker Source
+	dockerEnabled := cfg.Source.Docker != nil
+	log.Printf(" - Docker Source: %t", dockerEnabled)
+	if dockerEnabled {
+		log.Printf("   - Label Key: %s", cfg.Source.Docker.LabelKey)
+		log.Printf("   - Docker Host: %s", cfg.Source.Docker.Host)
+		// Node info is primarily used by Docker source
+		log.Printf("   - Node Hostname: %s", cfg.Node.Hostname)
+		log.Printf("   - Node IPv4: %s", cfg.Node.IP.IPv4.String())
+		if cfg.Node.IP.IPv6 != nil {
+			log.Printf("   - Node IPv6: %s", cfg.Node.IP.IPv6.String())
 		}
 	}
 
-	log.Printf(" - Tailscale Source: %t", config.TailscaleEnabled)
-	if config.TailscaleEnabled {
-		log.Printf("   - Tailscale Hostname: %s", config.TailscaleHostname)
-		if config.TailscaleLoginServer != "" {
-			log.Printf("   - Tailscale Login Server: %s", config.TailscaleLoginServer)
+	// Tailscale Source & Serve
+	tsEnabled := cfg.Source.Tailscale != nil
+	log.Printf(" - Tailscale Source: %t", tsEnabled)
+	log.Printf(" - Tailscale Serve: %t", cfg.TailscaleServe)
+
+	if tsEnabled {
+		log.Printf("   - Tailscale Hostname: %s", cfg.Source.Tailscale.Hostname)
+		if cfg.Source.Tailscale.LoginServer != "" {
+			log.Printf("   - Tailscale Login Server: %s", cfg.Source.Tailscale.LoginServer)
 		}
 	}
 
 	// Sinks
-	if config.HostsFile != "" {
-		log.Printf(" - Hosts File: %s", config.HostsFile)
+	if cfg.Sink.Hosts != nil {
+		log.Printf(" - Hosts File Sink: Enabled")
+		log.Printf("   - Path: %s", cfg.Sink.Hosts.Path)
+		log.Printf("   - HTTP Port: %d", cfg.Sink.Hosts.Port)
 	}
-	if config.ExtraRecordsFile != "" {
-		log.Printf(" - Extra Records File: %s", config.ExtraRecordsFile)
+
+	if cfg.Sink.Headscale != nil {
+		log.Printf(" - Headscale Sink: Enabled")
+		log.Printf("   - Path: %s", cfg.Sink.Headscale.ExtraRecordsFile)
 	}
-	if config.DNSPort != 0 {
-		log.Printf(" - DNS Port: %d", config.DNSPort)
+
+	if cfg.Sink.DNS != nil {
+		log.Printf(" - DNS Sink: Enabled")
+		log.Printf("   - UDP Port: %d", cfg.Sink.DNS.Port)
 	}
 }

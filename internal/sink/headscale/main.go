@@ -10,7 +10,7 @@ import (
 
 func New(config config.Config) *Sink {
 	return &Sink{
-		filePath:     config.ExtraRecordsFile,
+		filePath:     config.Sink.Headscale.ExtraRecordsFile,
 		noBaseDomain: config.NoBaseDomain,
 		baseDomain:   config.BaseDomain,
 	}

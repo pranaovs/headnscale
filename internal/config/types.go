@@ -13,33 +13,73 @@ type Config struct {
 	NoBaseDomain   bool
 	BaseDomain     string
 	Wildcard       bool
-	Node           types.Node
 	Refresh        time.Duration
-	Port           int
 	StateDir       string
 	TailscaleServe bool
-	TSNet          TSNet
+	TSNet          *TSNet
+	Node           types.Node
 
-	// Docker source
-	DockerEnabled bool
-	DockerHost    string
-	DockerContext string
-	LabelKey      string
-
-	// Tailscale source
-	TailscaleEnabled     bool
-	TailscaleLoginServer string
-	TailscaleAuthKey     string
-	TailscaleHostname    string
-
-	// Sinks
-	ExtraRecordsFile string
-	HostsFile        string
-	DNSPort          int
+	Source Source
+	Sink   Sink
 }
+
+type Source struct {
+	Docker    *Docker
+	Tailscale *Tailscale
+}
+
+type (
+	Docker struct {
+		Host     string
+		Context  string
+		LabelKey string
+	}
+	Tailscale struct {
+		LoginServer string
+		AuthKey     string
+		Hostname    string
+	}
+)
+
+type Sink struct {
+	Headscale *Headscale
+	Hosts     *Hosts
+	DNS       *DNS
+}
+
+type (
+	Headscale struct {
+		ExtraRecordsFile string
+	}
+	Hosts struct {
+		Path   string
+		Port   int
+		TSPort int
+	}
+	DNS struct {
+		Port   int
+		TSPort int
+	}
+)
 
 // TSNet holds Tailscale tsnet server and local client instances
 type TSNet struct {
 	Srv *tsnet.Server
 	Cli *local.Client
+}
+
+// GetServer returns the tsnet server if available, or nil
+func (t *TSNet) GetServer() *tsnet.Server {
+	if t == nil {
+		return nil
+	}
+	return t.Srv
+}
+
+// GetClient returns the local client if available, or nil
+func (t *TSNet) GetClient() *local.Client {
+	if t == nil {
+		return nil
+	}
+	return t.Cli
 }
