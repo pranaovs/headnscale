@@ -12,19 +12,16 @@ import (
 
 func New(config config.Config) *Sink {
 	return &Sink{
-		filePath:     config.Sink.Hosts.Path,
-		noBaseDomain: config.NoBaseDomain,
-		baseDomain:   config.BaseDomain,
-		// Listen on both IPv4 wildcard and IPv6 wildcard
-		ips:  []net.IP{net.IPv4zero, net.IPv6zero},
-		port: config.Sink.Hosts.Port,
+		Common: config.Common,
+		Hosts:  config.Sink.Hosts,
+		ips:    []net.IP{net.IPv4zero, net.IPv6zero},
 	}
 }
 
 func (s *Sink) Initialize(ctx context.Context) error {
 	// Helper function handles all the setup complexity
 	for _, ip := range s.ips {
-		srv, err := startServer(ip, s.port, s.filePath)
+		srv, err := startServer(ip, s.Port, s.Path)
 		if err != nil {
 			log.Printf("Failed to start HTTP server on %s: %v", ip, err)
 			return err
@@ -32,23 +29,23 @@ func (s *Sink) Initialize(ctx context.Context) error {
 		s.servers = append(s.servers, srv)
 	}
 
-	log.Printf("Hosts sink initialized, serving on port %d (Dual Stack)", s.port)
+	log.Printf("Hosts sink initialized, serving on port %d (Dual Stack)", s.Port)
 	return nil
 }
 
 func (s *Sink) Process(ctx context.Context, nodes []types.Node) error {
-	records := create(nodes, s.baseDomain)
-	if s.noBaseDomain {
+	records := create(nodes, s.BaseDomain)
+	if s.NoBaseDomain {
 		records = append(records, create(nodes, "")...)
 	}
 	sorted := sort(records)
 
-	if err := write(s.filePath, sorted); err != nil {
+	if err := write(s.Path, sorted); err != nil {
 		log.Printf("error writing hosts: %v", err)
 		return err
 	}
 
-	log.Printf("Wrote %d host records to %s", len(sorted), s.filePath)
+	log.Printf("Wrote %d host records to %s", len(sorted), s.Path)
 	return nil
 }
 

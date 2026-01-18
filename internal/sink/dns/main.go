@@ -13,13 +13,11 @@ import (
 
 func New(config config.Config) *Sink {
 	return &Sink{
-		noBaseDomain: config.NoBaseDomain,
-		baseDomain:   config.BaseDomain,
-		wildcard:     config.Wildcard,
-		localIPs:     []net.IP{net.IPv4zero, net.IPv6zero},
-		dnsPort:      config.Sink.DNS.Port,
-		tsServer:     config.TSNet.GetServer(),
-		tsClient:     config.TSNet.GetClient(),
+		Common:   config.Common,
+		DNS:      config.Sink.DNS,
+		localIPs: []net.IP{net.IPv4zero, net.IPv6zero},
+		tsServer: config.TSNet.GetServer(),
+		tsClient: config.TSNet.GetClient(),
 	}
 }
 
@@ -31,7 +29,7 @@ func (s *Sink) Initialize(ctx context.Context) error {
 			network = "udp6"
 		}
 
-		addr := net.JoinHostPort(ip.String(), strconv.Itoa(s.dnsPort))
+		addr := net.JoinHostPort(ip.String(), strconv.Itoa(s.Port))
 		srv := &dns.Server{
 			Addr:    addr,
 			Net:     network,

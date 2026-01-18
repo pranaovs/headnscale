@@ -3,15 +3,15 @@ package hosts
 import (
 	"net"
 	"net/http"
+
+	"github.com/pranaovs/headnscale/internal/config"
 )
 
 type Sink struct {
-	filePath     string
-	noBaseDomain bool
-	baseDomain   string
+	*config.Common
+	*config.Hosts
 
-	// Networking
+	// Runtime state
 	ips     []net.IP
-	port    int
-	servers []*http.Server // Changed from custom struct to standard type
+	servers []*http.Server
 }

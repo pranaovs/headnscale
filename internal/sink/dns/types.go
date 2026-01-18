@@ -5,21 +5,18 @@ import (
 	"sync"
 
 	"github.com/miekg/dns"
+	"github.com/pranaovs/headnscale/internal/config"
 	"github.com/pranaovs/headnscale/internal/types"
 	"tailscale.com/client/local"
 	"tailscale.com/tsnet"
 )
 
 type Sink struct {
-	baseDomain   string
-	noBaseDomain bool
-	wildcard     bool
+	*config.Common
+	*config.DNS
 
-	// Local Configuration
-	dnsPort  int
-	localIPs []net.IP // Slice of IPs to listen on locally
-
-	// Server instances (Slices to handle multiple listeners)
+	// Runtime state
+	localIPs  []net.IP
 	localSrvs []*dns.Server
 	tsSrvs    []*dns.Server
 

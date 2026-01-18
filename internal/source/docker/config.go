@@ -7,8 +7,8 @@ import (
 func GetClientOption(s *Source) []client.ClientOption {
 	options := []client.ClientOption{}
 
-	options = append(options, client.WithDockerHost(s.dockerHost))
-	options = append(options, client.WithDockerContext(s.dockerContext))
+	options = append(options, client.WithDockerHost(s.Host))
+	options = append(options, client.WithDockerContext(s.Context))
 
 	return options
 }

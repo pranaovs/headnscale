@@ -2,13 +2,11 @@ package docker
 
 import (
 	sdkclient "github.com/docker/go-sdk/client"
-	"github.com/pranaovs/headnscale/internal/types"
+	"github.com/pranaovs/headnscale/internal/config"
 )
 
 type Source struct {
-	cli           sdkclient.SDKClient
-	dockerHost    string
-	dockerContext string
-	labelKey      string
-	node          types.Node
+	*config.Common
+	*config.Docker
+	cli sdkclient.SDKClient
 }
