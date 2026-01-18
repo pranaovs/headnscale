@@ -55,10 +55,10 @@ func main() {
 		}
 
 		status, err := cfg.TSNet.Cli.Status(ctx)
-		cfg.TSNet.Hostname = tailscale.HostNameFromDNSName(status.Self.DNSName)
 		if err != nil {
 			log.Fatalf("Failed to get Tailscale status: %v", err)
 		}
+		cfg.TSNet.Hostname = tailscale.HostNameFromDNSName(status.Self.DNSName)
 
 		for _, ip := range status.TailscaleIPs {
 			if ip.Is4() {
