@@ -5,18 +5,30 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /var/lib/headscale:/data # Headscale extra_records.json path
+      - /var/lib/headscale:/data
+      - ./state:/var/lib/headnscale
+    ports:
+      - 8080:8080
     environment:
       # Docker source
       - HEADNSCALE_DOCKER_ENABLED=true
-      - HEADNSCALE_NODE_HOSTNAME=<Tailscale Hostname> # tailscale whois $(tailscale ip --1)
+      - HEADNSCALE_NODE_HOSTNAME=<Tailscale Hostname>
       - HEADNSCALE_NODE_IP=<Tailscale IPv4>
       - HEADNSCALE_NODE_IP6=<Tailscale IPv6>
-      # Headscale sink
+      # Tailscale source (read peers from tailnet)
+      - HEADNSCALE_TS_ENABLED=true
+      # Tailscale serve (serve HTTP/DNS over tailnet)
+      - HEADNSCALE_TS_SERVE=true
+      # - TS_AUTHKEY=<your-auth-key>
+      - HEADNSCALE_TS_LOGIN_SERVER=https://headscale.example.com
+      # Sinks
       - HEADNSCALE_JSON_ENABLED=true
       - HEADNSCALE_JSON_PATH=/data/extra_records.json
+      - HEADNSCALE_HOSTS_ENABLED=true
+      - HEADNSCALE_HOSTS_PATH=/data/hosts.txt
+      - HEADNSCALE_DNS_ENABLED=true
+      - HEADNSCALE_DNS_PORT=8053 # Custom port
+      - HEADNSCALE_DNS_TS_PORT=53 # DNS Port over tailnet
       # Common
       - HEADNSCALE_BASE_DOMAIN=ts.net
-      - HEADNSCALE_NO_BASE_DOMAIN=true # Create additional DNS Records without HEADNSCALE_BASE_DOMAIN
-      # - HEADNSCALE_LABEL_KEY=headnscale.subdomain
-      # - HEADNSCALE_REFRESH_SECONDS=60
+      - HEADNSCALE_NO_BASE_DOMAIN=true
