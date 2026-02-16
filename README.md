@@ -83,8 +83,8 @@ Set `HEADNSCALE_HOSTS_ENABLED` to `true` to enable.
 |----------|----------|---------|-------------|
 | `HEADNSCALE_HOSTS_ENABLED` | No | `false` | Set to `true` to enable Hosts sink |
 | `HEADNSCALE_HOSTS_PATH` | Yes | - | Path to write the hosts file |
-| `HEADNSCALE_HOSTS_PORT` | No | `80` | Port to serve hosts file under `/hosts` and `/hosts.txt` |
-| `HEADNSCALE_HOSTS_TS_PORT` | No | `HEADNSCALE_HOSTS_PORT` | Port on tailnet to serve hosts file under `/hosts` and `/hosts.txt` |
+| `HEADNSCALE_HOSTS_PORT` | No | `80` | Port to serve hosts file over HTTP |
+| `HEADNSCALE_HOSTS_TS_PORT` | No | `HEADNSCALE_HOSTS_PORT` | Port on tailnet to serve hosts file over HTTP |
 
 
 ##### DNS Sink
@@ -124,7 +124,7 @@ services:
       - HEADNSCALE_TS_ENABLED=true
       # Tailscale serve (serve HTTP/DNS over tailnet)
       - HEADNSCALE_TS_SERVE=true
-      - TS_AUTHKEY=<your-auth-key>
+      # - TS_AUTHKEY=<your-auth-key>
       - HEADNSCALE_TS_LOGIN_SERVER=https://headscale.example.com
       # Sinks
       - HEADNSCALE_JSON_ENABLED=true
@@ -132,7 +132,8 @@ services:
       - HEADNSCALE_HOSTS_ENABLED=true
       - HEADNSCALE_HOSTS_PATH=/data/hosts.txt
       - HEADNSCALE_DNS_ENABLED=true
-      - HEADNSCALE_DNS_PORT=53
+      - HEADNSCALE_DNS_PORT=8053 # Custom port
+      - HEADNSCALE_DNS_TS_PORT=53 # DNS Port over tailnet
       # Common
       - HEADNSCALE_BASE_DOMAIN=ts.net
       - HEADNSCALE_NO_BASE_DOMAIN=true
@@ -149,7 +150,7 @@ services:
   myapp:
     image: myapp
     labels:
-      - "traefik.http.routers.myapp.rule=Host(`myapp.your-node-hostname.ts.net`) || Host(`myapp.your-node-hostname`) || Host(`app.your-node-hostname.ts.net`) || Host(`app.your-node-hostname`)""
+      - "traefik.http.routers.myapp.rule=Host(`myapp.your-node-hostname.ts.net`) || Host(`myapp.your-node-hostname`) || Host(`app.your-node-hostname.ts.net`) || Host(`app.your-node-hostname`)"
       - "headnscale.subdomain=myapp|app"
 ```
 
@@ -173,12 +174,12 @@ docker build -t headnscale .
 
 This repository automatically builds and pushes Docker images to GitHub Container Registry on:
 
-- Latest tag (tagged as `latest`)
 - Every push to `main` branch (tagged as `main`)
-- Every tagged release (tagged as version numbers)
+- Every pull request to `main` (tagged as `pr-<number>`)
+- Every tagged release (tagged as semver versions, `latest`, and `release`)
 
 The image is available at: `ghcr.io/pranaovs/headnscale:latest`
 
 ---
 
-_Disclaimer: README.md, Dockerfile and .github/ created using Claude Sonnet 4.5 (GitHub Copilot). Please report any problems/inconsistencies if found._
+_Disclaimer: Dockerfile and .github/ initially created using Claude Sonnet 4.5 (GitHub Copilot). Please report any problems/inconsistencies if found._
