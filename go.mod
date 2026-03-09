@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/docker/docker v28.5.2+incompatible
-	github.com/docker/go-sdk/client v0.1.0-alpha011
+	github.com/docker/go-sdk/client v0.1.0-alpha013
 	github.com/miekg/dns v1.1.70
 	tailscale.com v1.94.2
 )
@@ -28,7 +28,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.5 // indirect
 	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/caarlos0/env/v11 v11.3.1 // indirect
-	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coder/websocket v1.8.12 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
@@ -37,9 +36,9 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dblohm7/wingoes v0.0.0-20240119213807-a09d6be7affa // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
-	github.com/docker/go-sdk/config v0.1.0-alpha011 // indirect
-	github.com/docker/go-sdk/context v0.1.0-alpha011 // indirect
+	github.com/docker/go-connections v0.6.0 // indirect
+	github.com/docker/go-sdk/config v0.1.0-alpha013 // indirect
+	github.com/docker/go-sdk/context v0.1.0-alpha013 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
@@ -60,11 +59,11 @@ require (
 	github.com/mdlayher/socket v0.5.0 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	github.com/moby/sys/sequential v0.6.0 // indirect
+	github.com/moby/moby/api v1.52.0 // indirect
+	github.com/moby/moby/client v0.1.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pires/go-proxyproto v0.8.1 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus-community/pro-bing v0.4.0 // indirect
 	github.com/safchain/ethtool v0.3.0 // indirect
