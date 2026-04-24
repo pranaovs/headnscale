@@ -1,0 +1,22 @@
+name: Cleanup PR Registry
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  delete-tag:
+    runs-on: self-hosted
+    container:
+      image: alpine/curl:latest@sha256:dc61c4dbdf3ba6d83094fdb12e7e4757c684413a2f7a1162e43d2af00a6222c7
+    steps:
+      - name: Delete PR Tag from Registry
+        run: |
+          # image tag name
+          TAG_NAME="pr-${{ forgejo.event.pull_request.number }}"
+
+          echo "Deleting tag $TAG_NAME from package ${{ forgejo.event.repository.name }} from owner ${{ forgejo.repository_owner }} in registry ${{ vars.REGISTRY }}"
+
+          curl -f --no-progress-meter -X DELETE \
+            -H "Authorization: token ${{ secrets.REGISTRY_PASS }}" \
+            "https://${{ vars.REGISTRY }}/api/v1/packages/${{ forgejo.repository_owner }}/container/${{ forgejo.event.repository.name }}/$TAG_NAME"
