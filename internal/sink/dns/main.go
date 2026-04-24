@@ -6,9 +6,9 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/miekg/dns"
 	"codeberg.org/pranaovs/headnscale/internal/config"
 	"codeberg.org/pranaovs/headnscale/internal/types"
+	"github.com/miekg/dns"
 )
 
 func New(config config.Config) *Sink {

@@ -4,9 +4,9 @@ import (
 	"net"
 	"sync"
 
-	"github.com/miekg/dns"
 	"codeberg.org/pranaovs/headnscale/internal/config"
 	"codeberg.org/pranaovs/headnscale/internal/types"
+	"github.com/miekg/dns"
 	"tailscale.com/client/local"
 )
 

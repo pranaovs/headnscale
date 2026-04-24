@@ -5,11 +5,11 @@ import (
 	"log"
 	"strings"
 
+	"codeberg.org/pranaovs/headnscale/internal/config"
+	"codeberg.org/pranaovs/headnscale/internal/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	sdkclient "github.com/docker/go-sdk/client"
-	"codeberg.org/pranaovs/headnscale/internal/config"
-	"codeberg.org/pranaovs/headnscale/internal/types"
 )
 
 func New(config config.Config) *Source {
