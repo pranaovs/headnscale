@@ -1,6 +1,6 @@
 services:
   headnscale:
-    image: ghcr.io/pranaovs/headnscale:latest
+    image: codeberg.org/pranaovs/headnscale:stable
     container_name: headnscale
     restart: unless-stopped
     volumes:
