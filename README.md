@@ -170,16 +170,13 @@ When `HEADNSCALE_TS_SERVE=true`, the HTTP and DNS servers (if enabled) will also
 docker build -t headnscale .
 ```
 
-## GitHub Actions
+## Forgejo Actions
 
-This repository automatically builds and pushes Docker images to GitHub Container Registry on:
+This repository automatically builds and pushes Docker images to Codeberg Container Registry on:
 
 - Every push to `main` branch (tagged as `main`)
 - Every pull request to `main` (tagged as `pr-<number>`)
-- Every tagged release (tagged as semver versions, `latest`, and `release`)
+- Every tagged release (tagged as semver versions)
+- Latest tagged release (tagged as `stable` and `latest`)
 
-The image is available at: `ghcr.io/pranaovs/headnscale:latest`
-
----
-
-_Disclaimer: Dockerfile and .github/ initially created using Claude Sonnet 4.5 (GitHub Copilot). Please report any problems/inconsistencies if found._
+The image is available at: `codeberg.org/pranaovs/headnscale:stable`
