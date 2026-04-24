@@ -175,8 +175,8 @@ docker build -t headnscale .
 This repository automatically builds and pushes Docker images to Codeberg Container Registry on:
 
 - Every push to `main` branch (tagged as `main`)
-- Every pull request to `main` (tagged as `pr-<number>`)
-- Every tagged release (tagged as semver versions)
+- Every pull request (tagged as `pr-<number>`)
+- Every tagged release since v3 (tagged as semver versions)
 - Latest tagged release (tagged as `stable` and `latest`)
 
 The image is available at: `codeberg.org/pranaovs/headnscale:stable`
