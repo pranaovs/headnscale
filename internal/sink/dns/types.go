@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/miekg/dns"
-	"github.com/pranaovs/headnscale/internal/config"
-	"github.com/pranaovs/headnscale/internal/types"
+	"codeberg.org/pranaovs/headnscale/internal/config"
+	"codeberg.org/pranaovs/headnscale/internal/types"
 	"tailscale.com/client/local"
 )
 

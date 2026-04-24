@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/pranaovs/headnscale/internal/types"
+	"codeberg.org/pranaovs/headnscale/internal/types"
 )
 
 func create(nodes []types.Node, baseDomain string) []string {

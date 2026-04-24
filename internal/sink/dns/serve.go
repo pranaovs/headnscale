@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/miekg/dns"
-	"github.com/pranaovs/headnscale/internal/types"
+	"codeberg.org/pranaovs/headnscale/internal/types"
 )
 
 func (s *Sink) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {

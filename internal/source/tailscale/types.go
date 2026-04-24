@@ -1,7 +1,7 @@
 package tailscale
 
 import (
-	"github.com/pranaovs/headnscale/internal/config"
+	"codeberg.org/pranaovs/headnscale/internal/config"
 	"tailscale.com/client/local"
 )
 

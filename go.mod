@@ -1,4 +1,4 @@
-module github.com/pranaovs/headnscale
+module codeberg.org/pranaovs/headnscale
 
 go 1.25.5
 

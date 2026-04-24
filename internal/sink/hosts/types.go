@@ -4,7 +4,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/pranaovs/headnscale/internal/config"
+	"codeberg.org/pranaovs/headnscale/internal/config"
 )
 
 type Sink struct {

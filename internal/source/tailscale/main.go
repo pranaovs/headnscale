@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 
-	"github.com/pranaovs/headnscale/internal/config"
-	"github.com/pranaovs/headnscale/internal/types"
-	"github.com/pranaovs/headnscale/internal/utils"
+	"codeberg.org/pranaovs/headnscale/internal/config"
+	"codeberg.org/pranaovs/headnscale/internal/types"
+	"codeberg.org/pranaovs/headnscale/internal/utils"
 )
 
 func New(config config.Config) *Source {

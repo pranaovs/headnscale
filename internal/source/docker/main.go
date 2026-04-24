@@ -8,8 +8,8 @@ import (
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	sdkclient "github.com/docker/go-sdk/client"
-	"github.com/pranaovs/headnscale/internal/config"
-	"github.com/pranaovs/headnscale/internal/types"
+	"codeberg.org/pranaovs/headnscale/internal/config"
+	"codeberg.org/pranaovs/headnscale/internal/types"
 )
 
 func New(config config.Config) *Source {

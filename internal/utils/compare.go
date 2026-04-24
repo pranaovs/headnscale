@@ -3,7 +3,7 @@ package utils
 import (
 	"bytes"
 
-	"github.com/pranaovs/headnscale/internal/types"
+	"codeberg.org/pranaovs/headnscale/internal/types"
 )
 
 // NodesEqual checks if two node slices are equal
