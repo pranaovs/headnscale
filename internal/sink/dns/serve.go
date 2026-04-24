@@ -4,8 +4,8 @@ import (
 	"log"
 	"strings"
 
+	"codeberg.org/pranaovs/headnscale/internal/types"
 	"github.com/miekg/dns"
-	"github.com/pranaovs/headnscale/internal/types"
 )
 
 func (s *Sink) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {

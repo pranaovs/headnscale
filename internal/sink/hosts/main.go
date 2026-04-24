@@ -7,8 +7,8 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/pranaovs/headnscale/internal/config"
-	"github.com/pranaovs/headnscale/internal/types"
+	"codeberg.org/pranaovs/headnscale/internal/config"
+	"codeberg.org/pranaovs/headnscale/internal/types"
 )
 
 func New(cfg config.Config) *Sink {

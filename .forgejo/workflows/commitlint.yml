@@ -1,0 +1,33 @@
+name: Commit Lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  check-commit:
+    runs-on: self-hosted
+    container:
+      image: commitlint/commitlint
+      options: --entrypoint /bin/sh
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 1
+
+      - name: Lint commit
+        env:
+          EVENT_NAME: ${{ forgejo.event_name }}
+          PR_TITLE: ${{ forgejo.event.pull_request.title }}
+          COMMIT_MESSAGE: ${{ forgejo.event.head_commit.message }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "$PR_TITLE" | commitlint
+          else
+            echo "$COMMIT_MESSAGE" | commitlint
+          fi

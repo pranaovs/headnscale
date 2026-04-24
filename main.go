@@ -9,13 +9,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pranaovs/headnscale/internal/config"
-	"github.com/pranaovs/headnscale/internal/sink/dns"
-	"github.com/pranaovs/headnscale/internal/sink/headscale"
-	"github.com/pranaovs/headnscale/internal/sink/hosts"
-	"github.com/pranaovs/headnscale/internal/source/docker"
-	"github.com/pranaovs/headnscale/internal/source/tailscale"
-	"github.com/pranaovs/headnscale/internal/types"
+	"codeberg.org/pranaovs/headnscale/internal/config"
+	"codeberg.org/pranaovs/headnscale/internal/sink/dns"
+	"codeberg.org/pranaovs/headnscale/internal/sink/headscale"
+	"codeberg.org/pranaovs/headnscale/internal/sink/hosts"
+	"codeberg.org/pranaovs/headnscale/internal/source/docker"
+	"codeberg.org/pranaovs/headnscale/internal/source/tailscale"
+	"codeberg.org/pranaovs/headnscale/internal/types"
 	"tailscale.com/tsnet"
 )
 

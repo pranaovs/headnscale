@@ -5,7 +5,7 @@ import (
 	"os"
 	libsort "sort"
 
-	"github.com/pranaovs/headnscale/internal/types"
+	"codeberg.org/pranaovs/headnscale/internal/types"
 )
 
 // Ref: https://github.com/juanfont/headscale/blob/main/docs/ref/dns.md

@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  ci:
+    name: Format, Test & Build Go
+    runs-on: self-hosted
+
+    container:
+      image: codeberg.org/pranaovs/go-ci:latest@sha256:4bc5f1737e12deb278bacb470bb3c85b731670b506e13e0991140f84b7e7e16c
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      # - name: Setup cache
+      #   uses: actions/cache@v5
+      #   with:
+      #     path: |
+      #       /go/pkg/mod
+      #       /root/.cache/go-build
+      #     key: ${{ runner.os }}-go-${{ hashFiles('server/go.sum') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Files not formatted: $unformatted"
+            exit 1
+          fi
+        continue-on-error: true
+
+      - name: Vet code
+        run: go vet ./...
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Build
+        run: go build -v ./...

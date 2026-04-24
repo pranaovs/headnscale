@@ -1,0 +1,82 @@
+name: Container Release
+enable-email-notifications: true
+
+on:
+  push:
+    # Triggers on any push to any branch
+    branches:
+      - "main"
+    # Triggers on any pushed tags (e.g., v1.0.0)
+    tags:
+      - "v*"
+  pull_request:
+
+jobs:
+  build-and-push:
+    name: Container Build
+    runs-on: self-hosted-dedicated
+    container:
+      image: node:alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4
+
+    steps:
+      - name: Install runtime dependencies
+        run: apk add --no-cache buildah fuse-overlayfs podman netavark git
+
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          clean: true
+          fetch-depth: 0
+
+      - name: Determine latest release tag
+        id: latest
+        run: |
+          git fetch --quiet --tags
+
+          # Sort descending, filter for clean vX.Y.Z tags, head
+          LATEST_TAG=$(git tag --list --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+
+          echo "Latest stable tag: $LATEST_TAG"
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Extract container metadata (tags)
+        id: meta
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6
+        with:
+          images: ${{ vars.REGISTRY }}/${{ forgejo.repository}}
+          context: git
+          flavor: |
+            latest=false
+          sep-tags: " "
+          tags: |
+            type=ref,event=branch,enable=${{ forgejo.event_name != 'pull_request' }}
+            type=raw,value=pr-${{ forgejo.event.pull_request.number }},enable=${{ forgejo.event_name == 'pull_request' }}
+            type=semver,pattern={{version}},value=${{ forgejo.ref_name }},enable=${{ startsWith(forgejo.ref, 'refs/tags/v') }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ forgejo.ref_name }},enable=${{ startsWith(forgejo.ref, 'refs/tags/v') }}
+            type=semver,pattern={{major}},value=${{ forgejo.ref_name }},enable=${{ forgejo.ref == format('refs/tags/{0}', steps.latest.outputs.tag) }}
+            type=raw,value=latest,enable=${{ forgejo.ref == format('refs/tags/{0}', steps.latest.outputs.tag) }}
+            type=raw,value=stable,enable=${{ forgejo.ref == format('refs/tags/{0}', steps.latest.outputs.tag) }}
+
+      - name: Build container
+        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2
+        id: build
+        env:
+          BUILDAH_ISOLATION: chroot
+
+        with:
+          context: .
+          containerfiles: Containerfile
+          image: ${{ vars.REGISTRY }}/${{ forgejo.repository }}
+          oci: true
+
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+
+      - name: Push to registry
+        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
+        with:
+          image: ${{ steps.build.outputs.image }}
+          tags: ${{ steps.build.outputs.tags }}
+          registry: ${{ vars.REGISTRY }}
+          username: ${{ forgejo.repository_owner }}
+          password: ${{ secrets.REGISTRY_PASS }}

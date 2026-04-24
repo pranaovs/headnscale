@@ -1,6 +1,6 @@
 package headscale
 
-import "github.com/pranaovs/headnscale/internal/config"
+import "codeberg.org/pranaovs/headnscale/internal/config"
 
 type Sink struct {
 	config.Common

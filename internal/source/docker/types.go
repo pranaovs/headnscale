@@ -1,8 +1,8 @@
 package docker
 
 import (
+	"codeberg.org/pranaovs/headnscale/internal/config"
 	sdkclient "github.com/docker/go-sdk/client"
-	"github.com/pranaovs/headnscale/internal/config"
 )
 
 type Source struct {

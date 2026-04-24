@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/pranaovs/headnscale/internal/types"
+	"codeberg.org/pranaovs/headnscale/internal/types"
 	"tailscale.com/client/local"
 	"tailscale.com/tsnet"
 )
