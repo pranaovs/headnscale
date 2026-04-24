@@ -1,6 +1,6 @@
 services:
   headnscale:
-    image: codeberg.org/pranaovs/headnscale:stable
+    image: codeberg.org/pranaovs/headnscale:v3
     container_name: headnscale
     restart: unless-stopped
     volumes:

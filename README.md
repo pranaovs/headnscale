@@ -16,7 +16,7 @@ All sources and sinks are optional and enabled via environment variables.
 
 ## Quick Start
 
-### Using Pre-built Image from GHCR
+### Using pre-built Image from container registry
 
 1. Create a `docker-compose.yml` file (or use the provided one)
 2. Update environment variables with your settings
@@ -105,7 +105,7 @@ Set `HEADNSCALE_DNS_ENABLED` to `true` to enable.
 ```yaml
 services:
   headnscale:
-    image: ghcr.io/pranaovs/headnscale:latest
+    image: codeberg.org/pranaovs/headnscale:v3
     container_name: headnscale
     restart: unless-stopped
     volumes:
