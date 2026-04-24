@@ -16,6 +16,4 @@ WORKDIR /app
 
 COPY --from=builder /build/headnscale /app/headnscale
 
-USER nonroot:nonroot
-
 ENTRYPOINT ["/app/headnscale"]
