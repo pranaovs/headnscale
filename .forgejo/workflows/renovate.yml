@@ -14,7 +14,7 @@ jobs:
     runs-on: self-hosted-dedicated
 
     container:
-      image: ghcr.io/renovatebot/renovate@sha256:4c84638a2b70b2fe2c3bbf87d25e6f8aba40d83f8ca2b7c0bd3d0f1a4591ef7b
+      image: ghcr.io/renovatebot/renovate@sha256:9177e00d570901ab35efe04ef81d38394015e1740c75f47ef8eaeb49df245361
 
     steps:
       - name: Run Renovate
