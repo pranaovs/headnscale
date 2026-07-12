@@ -11,7 +11,7 @@ jobs:
   check-commit:
     runs-on: self-hosted
     container:
-      image: commitlint/commitlint@sha256:0a4f7aa2942c8c80580c5ec4870010d4e930ab462040dbbe93cf58925f00c369
+      image: commitlint/commitlint@sha256:f4b38082bec66b4cd1b37a0357145dded515c4468e2b339ec9ba31f86461f6b9
       options: --entrypoint /bin/sh
 
     steps:
