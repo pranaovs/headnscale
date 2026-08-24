@@ -58,7 +58,7 @@ jobs:
             type=raw,value=stable,enable=${{ forgejo.ref == format('refs/tags/{0}', steps.latest.outputs.tag) }}
 
       - name: Build container
-        uses: redhat-actions/buildah-build@9dc2ade9b5db229966b5025ae266311e12f349c4 # v2
+        uses: redhat-actions/buildah-build@719e3c40d8af9790c23eca13f7daa339f2867034 # v3
         id: build
         env:
           BUILDAH_ISOLATION: chroot
