@@ -6,7 +6,7 @@ require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-sdk/client v0.1.0-alpha011
 	github.com/miekg/dns v1.1.72
-	tailscale.com v1.100.0
+	tailscale.com v1.102.3
 )
 
 require (
