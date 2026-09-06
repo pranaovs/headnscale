@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-sdk/client v0.1.0-alpha011
-	github.com/miekg/dns v1.1.72
+	github.com/miekg/dns v1.1.73
 	tailscale.com v1.100.0
 )
 
@@ -78,7 +78,6 @@ require (
 	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	golang.org/x/tools v0.49.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	golang.zx2c4.com/wireguard/windows v0.5.3 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
